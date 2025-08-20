@@ -1,0 +1,79 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\MyProjects\\Edory\\src\\Edory.SharedKernel\\Edory.SharedKernel.csproj": {}
+  },
+  "projects": {
+    "C:\\MyProjects\\Edory\\src\\Edory.SharedKernel\\Edory.SharedKernel.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\MyProjects\\Edory\\src\\Edory.SharedKernel\\Edory.SharedKernel.csproj",
+        "projectName": "Edory.SharedKernel",
+        "projectPath": "C:\\MyProjects\\Edory\\src\\Edory.SharedKernel\\Edory.SharedKernel.csproj",
+        "packagesPath": "C:\\Users\\DimitriSc\\.nuget\\packages\\",
+        "outputPath": "C:\\MyProjects\\Edory\\src\\Edory.SharedKernel\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\DimitriSc\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/3993374e-73af-44be-aaea-6975f6b6e148/_packaging/TwinCAT-XCAD-Internal/nuget/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/_packaging/Measurement/nuget/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/_packaging/TcBase/nuget/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/_packaging/TcThirdParty/nuget/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/_packaging/TwinCAT-IoT-OPC-Internal/nuget/v3/index.json": {},
+          "https://azdevops01.beckhoff.com/GSW01/_packaging/TwinCAT-PLC-Internal%40Local/nuget/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
