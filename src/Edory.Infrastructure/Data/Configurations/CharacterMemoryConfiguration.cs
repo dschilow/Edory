@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Avatales.Memory.Domain;
+using Edory.Memory.Domain;
 
-namespace Avatales.Infrastructure.Data.Configurations;
+namespace Edory.Infrastructure.Data.Configurations;
 
 /// <summary>
 /// Entity Framework Configuration für CharacterMemory Entity
@@ -53,7 +53,7 @@ public class CharacterMemoryConfiguration : IEntityTypeConfiguration<CharacterMe
             .IsRequired(false);
 
         // Relationship zur CharacterInstance
-        builder.HasOne<Character.Domain.CharacterInstance>()
+        builder.HasOne<Edory.Character.Domain.CharacterInstance>()
             .WithMany()
             .HasForeignKey(cm => cm.CharacterInstanceId)
             .OnDelete(DeleteBehavior.Cascade);

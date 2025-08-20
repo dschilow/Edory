@@ -6,21 +6,47 @@ using Edory.Character.Domain.Events;
 namespace Edory.Character.Domain;
 
 /// <summary>
-/// Charakter-Instanz - Eine spezifische Incarnation eines Charakters in einer Familie
-/// Entwickelt sich basierend auf den Erfahrungen in dieser Familie
-/// KORRIGIERTE VERSION ohne EF Tracking-Probleme
+/// Charakter-Instanz - VEREINFACHTE VERSION ohne EF Owned Types
+/// Speichert Traits als primitive Properties um EF Tracking-Probleme zu vermeiden
 /// </summary>
 public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
 {
+    // Basis-Eigenschaften
     public CharacterId OriginalCharacterId { get; private set; }
     public FamilyId OwnerFamilyId { get; private set; }
-    public CharacterDna BaseDna { get; private set; } // Unveränderliche Basis-DNA
-    public CharacterTraits CurrentTraits { get; private set; } // Entwickelte Eigenschaften
     public DateTime CreatedAt { get; private set; }
     public DateTime LastInteractionAt { get; private set; }
-    public int ExperienceCount { get; private set; } // Anzahl der Geschichten/Erfahrungen
-    public string? CustomName { get; private set; } // Optional: Familie kann Charakter umbenennen
-    
+    public int ExperienceCount { get; private set; }
+    public string? CustomName { get; private set; }
+
+    // Base DNA als primitive Properties (KEINE Owned Types)
+    public string BaseName { get; private set; } = string.Empty;
+    public string BaseDescription { get; private set; } = string.Empty;
+    public string BaseAppearance { get; private set; } = string.Empty;
+    public string BasePersonality { get; private set; } = string.Empty;
+    public int BaseMinAge { get; private set; }
+    public int BaseMaxAge { get; private set; }
+
+    // Base Traits als primitive Properties 
+    public int BaseTraitsCourage { get; private set; }
+    public int BaseTraitsCreativity { get; private set; }
+    public int BaseTraitsHelpfulness { get; private set; }
+    public int BaseTraitsHumor { get; private set; }
+    public int BaseTraitsWisdom { get; private set; }
+    public int BaseTraitsCuriosity { get; private set; }
+    public int BaseTraitsEmpathy { get; private set; }
+    public int BaseTraitsPersistence { get; private set; }
+
+    // Current Traits als primitive Properties
+    public int CurrentCourage { get; private set; }
+    public int CurrentCreativity { get; private set; }
+    public int CurrentHelpfulness { get; private set; }
+    public int CurrentHumor { get; private set; }
+    public int CurrentWisdom { get; private set; }
+    public int CurrentCuriosity { get; private set; }
+    public int CurrentEmpathy { get; private set; }
+    public int CurrentPersistence { get; private set; }
+
     private CharacterInstance(
         CharacterInstanceId id,
         CharacterId originalCharacterId,
@@ -30,11 +56,37 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
     {
         OriginalCharacterId = originalCharacterId;
         OwnerFamilyId = ownerFamilyId;
-        BaseDna = baseDna;
-        CurrentTraits = baseDna.BaseTraits; // Startet mit Basis-Eigenschaften
         CreatedAt = createdAt;
         LastInteractionAt = createdAt;
         ExperienceCount = 0;
+
+        // Base DNA kopieren (als primitive Properties)
+        BaseName = baseDna.Name;
+        BaseDescription = baseDna.Description;
+        BaseAppearance = baseDna.Appearance;
+        BasePersonality = baseDna.Personality;
+        BaseMinAge = baseDna.MinAge;
+        BaseMaxAge = baseDna.MaxAge;
+
+        // Base Traits kopieren
+        BaseTraitsCourage = baseDna.BaseTraits.Courage;
+        BaseTraitsCreativity = baseDna.BaseTraits.Creativity;
+        BaseTraitsHelpfulness = baseDna.BaseTraits.Helpfulness;
+        BaseTraitsHumor = baseDna.BaseTraits.Humor;
+        BaseTraitsWisdom = baseDna.BaseTraits.Wisdom;
+        BaseTraitsCuriosity = baseDna.BaseTraits.Curiosity;
+        BaseTraitsEmpathy = baseDna.BaseTraits.Empathy;
+        BaseTraitsPersistence = baseDna.BaseTraits.Persistence;
+
+        // Current Traits = Base Traits (zu Beginn)
+        CurrentCourage = baseDna.BaseTraits.Courage;
+        CurrentCreativity = baseDna.BaseTraits.Creativity;
+        CurrentHelpfulness = baseDna.BaseTraits.Helpfulness;
+        CurrentHumor = baseDna.BaseTraits.Humor;
+        CurrentWisdom = baseDna.BaseTraits.Wisdom;
+        CurrentCuriosity = baseDna.BaseTraits.Curiosity;
+        CurrentEmpathy = baseDna.BaseTraits.Empathy;
+        CurrentPersistence = baseDna.BaseTraits.Persistence;
         
         AddDomainEvent(new CharacterInstanceCreatedEvent(
             Id, originalCharacterId, ownerFamilyId, baseDna));
@@ -42,12 +94,11 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
     
     private CharacterInstance() : base(CharacterInstanceId.From(Guid.Empty)) 
     { 
-        // Für EF Core - Parameter werden durch EF gesetzt
+        // Für EF Core - Properties werden von EF gesetzt
     }
     
     /// <summary>
     /// Erstellt eine neue Charakter-Instanz basierend auf einem Charakter-Template
-    /// KORRIGIERTE VERSION
     /// </summary>
     public static CharacterInstance CreateFromCharacter(
         Character character,
@@ -59,31 +110,19 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
         if (ownerFamilyId == null)
             throw new ArgumentNullException(nameof(ownerFamilyId));
 
-        var instanceId = CharacterInstanceId.New();
-        var now = DateTime.UtcNow;
-        
-        // Erstelle eine Kopie der DNA für diese Instanz
-        var baseDnaCopy = CharacterDna.Create(
-            character.Dna.Name,
-            character.Dna.Description,
-            character.Dna.BaseTraits, // Traits werden kopiert, nicht referenziert
-            character.Dna.Appearance,
-            character.Dna.Personality,
-            character.Dna.MinAge,
-            character.Dna.MaxAge
-        );
+        if (!character.IsPublic && character.CreatorFamilyId != ownerFamilyId)
+            throw new InvalidOperationException("Privater Charakter kann nur von der Ersteller-Familie instanziiert werden");
 
         return new CharacterInstance(
-            instanceId,
+            CharacterInstanceId.New(),
             character.Id,
             ownerFamilyId,
-            baseDnaCopy,
-            now);
+            character.Dna,
+            DateTime.UtcNow);
     }
     
     /// <summary>
     /// Erstellt die Original-Instanz für den Ersteller des Charakters
-    /// NEUE METHODE
     /// </summary>
     public static CharacterInstance CreateOriginal(
         Character character,
@@ -92,11 +131,8 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
         if (character == null)
             throw new ArgumentNullException(nameof(character));
             
-        if (creatorFamilyId == null)
-            throw new ArgumentNullException(nameof(creatorFamilyId));
-
         if (character.CreatorFamilyId != creatorFamilyId)
-            throw new ArgumentException("Nur die Ersteller-Familie kann die Original-Instanz erstellen");
+            throw new InvalidOperationException("Nur die Ersteller-Familie kann die Original-Instanz erstellen");
 
         return CreateFromCharacter(character, creatorFamilyId);
     }
@@ -114,23 +150,24 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
         int empathyChange = 0,
         int persistenceChange = 0)
     {
-        var oldTraits = CurrentTraits;
+        var oldTraits = GetCurrentTraits();
         
-        CurrentTraits = CurrentTraits.Evolve(
-            courageChange,
-            creativityChange,
-            helpfulnessChange,
-            humorChange,
-            wisdomChange,
-            curiosityChange,
-            empathyChange,
-            persistenceChange);
+        // Apply changes with clamping (0-100)
+        CurrentCourage = Math.Clamp(CurrentCourage + courageChange, 0, 100);
+        CurrentCreativity = Math.Clamp(CurrentCreativity + creativityChange, 0, 100);
+        CurrentHelpfulness = Math.Clamp(CurrentHelpfulness + helpfulnessChange, 0, 100);
+        CurrentHumor = Math.Clamp(CurrentHumor + humorChange, 0, 100);
+        CurrentWisdom = Math.Clamp(CurrentWisdom + wisdomChange, 0, 100);
+        CurrentCuriosity = Math.Clamp(CurrentCuriosity + curiosityChange, 0, 100);
+        CurrentEmpathy = Math.Clamp(CurrentEmpathy + empathyChange, 0, 100);
+        CurrentPersistence = Math.Clamp(CurrentPersistence + persistenceChange, 0, 100);
             
         ExperienceCount++;
         LastInteractionAt = DateTime.UtcNow;
         
+        var newTraits = GetCurrentTraits();
         AddDomainEvent(new CharacterTraitsEvolvedEvent(
-            Id, OriginalCharacterId, OwnerFamilyId, oldTraits, CurrentTraits, ExperienceCount));
+            Id, OriginalCharacterId, OwnerFamilyId, oldTraits, newTraits, ExperienceCount));
     }
     
     /// <summary>
@@ -158,7 +195,40 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
     /// </summary>
     public string GetDisplayName()
     {
-        return !string.IsNullOrWhiteSpace(CustomName) ? CustomName : BaseDna.Name;
+        return !string.IsNullOrWhiteSpace(CustomName) ? CustomName : BaseName;
+    }
+
+    /// <summary>
+    /// Gibt die Base DNA als Value Object zurück (für Domain Logic)
+    /// </summary>
+    public CharacterDna GetBaseDna()
+    {
+        var baseTraits = CharacterTraits.Create(
+            BaseTraitsCourage, BaseTraitsCreativity, BaseTraitsHelpfulness, BaseTraitsHumor,
+            BaseTraitsWisdom, BaseTraitsCuriosity, BaseTraitsEmpathy, BaseTraitsPersistence);
+
+        return CharacterDna.Create(
+            BaseName, BaseDescription, baseTraits, BaseAppearance, BasePersonality, BaseMinAge, BaseMaxAge);
+    }
+
+    /// <summary>
+    /// Gibt die aktuellen Traits als Value Object zurück (für Domain Logic)
+    /// </summary>
+    public CharacterTraits GetCurrentTraits()
+    {
+        return CharacterTraits.Create(
+            CurrentCourage, CurrentCreativity, CurrentHelpfulness, CurrentHumor,
+            CurrentWisdom, CurrentCuriosity, CurrentEmpathy, CurrentPersistence);
+    }
+
+    /// <summary>
+    /// Gibt die Base Traits als Value Object zurück
+    /// </summary>
+    public CharacterTraits GetBaseTraits()
+    {
+        return CharacterTraits.Create(
+            BaseTraitsCourage, BaseTraitsCreativity, BaseTraitsHelpfulness, BaseTraitsHumor,
+            BaseTraitsWisdom, BaseTraitsCuriosity, BaseTraitsEmpathy, BaseTraitsPersistence);
     }
     
     /// <summary>
@@ -167,14 +237,14 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
     public CharacterTraits GetTraitEvolution()
     {
         return CharacterTraits.Create(
-            CurrentTraits.Courage - BaseDna.BaseTraits.Courage,
-            CurrentTraits.Creativity - BaseDna.BaseTraits.Creativity,
-            CurrentTraits.Helpfulness - BaseDna.BaseTraits.Helpfulness,
-            CurrentTraits.Humor - BaseDna.BaseTraits.Humor,
-            CurrentTraits.Wisdom - BaseDna.BaseTraits.Wisdom,
-            CurrentTraits.Curiosity - BaseDna.BaseTraits.Curiosity,
-            CurrentTraits.Empathy - BaseDna.BaseTraits.Empathy,
-            CurrentTraits.Persistence - BaseDna.BaseTraits.Persistence
+            CurrentCourage - BaseTraitsCourage,
+            CurrentCreativity - BaseTraitsCreativity,
+            CurrentHelpfulness - BaseTraitsHelpfulness,
+            CurrentHumor - BaseTraitsHumor,
+            CurrentWisdom - BaseTraitsWisdom,
+            CurrentCuriosity - BaseTraitsCuriosity,
+            CurrentEmpathy - BaseTraitsEmpathy,
+            CurrentPersistence - BaseTraitsPersistence
         );
     }
 }

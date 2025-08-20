@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Edory.Character.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+595b11b2d8a3b5eb3ea3297937facddf2a9366ac")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0723279ed80ffbe72e3bb87906b7cd823ca9f35")]
 [assembly: System.Reflection.AssemblyProductAttribute("Edory.Character.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Edory.Character.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,19 +1,20 @@
 using Microsoft.EntityFrameworkCore;
-using Avatales.Character.Domain;
-using Avatales.Memory.Domain;
-using Avatales.Story.Domain;
-using Avatales.Learning.Domain;
-using Avatales.SharedKernel.ValueObjects;
+using Edory.Character.Domain;
+using Edory.Memory.Domain;
+using Edory.Story.Domain;
+using Edory.Learning.Domain;
+using Edory.SharedKernel.ValueObjects;
 
 namespace Edory.Infrastructure.Data;
 
 /// <summary>
 /// Haupt-Database Context für die Edory Anwendung
 /// Verwaltet alle Bounded Contexts in einer gemeinsamen Datenbank
+/// Konfiguriert Value Objects und Domain Entities korrekt
 /// </summary>
 public class EdoryDbContext : DbContext
 {
-    public EdoryDbContext(DbContextOptions<AvatalesDbContext> options) : base(options) { }
+    public EdoryDbContext(DbContextOptions<EdoryDbContext> options) : base(options) { }
 
     // Character Context
     public DbSet<Character.Domain.Character> Characters { get; set; } = null!;
@@ -34,7 +35,7 @@ public class EdoryDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         // Apply configurations from all contexts
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AvatalesDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(EdoryDbContext).Assembly);
 
         // Configure Value Objects as owned types
         ConfigureValueObjects(modelBuilder);
@@ -104,21 +105,26 @@ public class EdoryDbContext : DbContext
         var traitConstraints = new[]
         {
             "BaseCourage", "BaseCreativity", "BaseHelpfulness", "BaseHumor",
-            "BaseWisdom", "BaseCuriosity", "BaseEmpathy", "BasePersistence",
-            "CurrentTraitsCourage", "CurrentTraitsCreativity", "CurrentTraitsHelpfulness",
-            "CurrentTraitsHumor", "CurrentTraitsWisdom", "CurrentTraitsCuriosity",
-            "CurrentTraitsEmpathy", "CurrentTraitsPersistence"
+            "BaseWisdom", "BaseCuriosity", "BaseEmpathy", "BasePersistence"
         };
 
         // Add check constraints for Characters table
-        foreach (var trait in traitConstraints.Where(t => t.StartsWith("Base")))
+        foreach (var trait in traitConstraints)
         {
             modelBuilder.Entity<Character.Domain.Character>()
                 .ToTable(t => t.HasCheckConstraint($"CK_Characters_{trait}", $"{trait} >= 0 AND {trait} <= 100"));
         }
 
-        // Add check constraints for CharacterInstances table
-        foreach (var trait in traitConstraints.Where(t => !t.StartsWith("Base") || t.Contains("Traits")))
+        // Add check constraints for CharacterInstances table - KORRIGIERT für neue Struktur
+        var instanceTraitConstraints = new[]
+        {
+            "BaseTraitsCourage", "BaseTraitsCreativity", "BaseTraitsHelpfulness", "BaseTraitsHumor",
+            "BaseTraitsWisdom", "BaseTraitsCuriosity", "BaseTraitsEmpathy", "BaseTraitsPersistence",
+            "CurrentCourage", "CurrentCreativity", "CurrentHelpfulness", "CurrentHumor",
+            "CurrentWisdom", "CurrentCuriosity", "CurrentEmpathy", "CurrentPersistence"
+        };
+
+        foreach (var trait in instanceTraitConstraints)
         {
             modelBuilder.Entity<CharacterInstance>()
                 .ToTable(t => t.HasCheckConstraint($"CK_CharacterInstances_{trait}", $"{trait} >= 0 AND {trait} <= 100"));
@@ -127,6 +133,9 @@ public class EdoryDbContext : DbContext
         // Age constraints
         modelBuilder.Entity<Character.Domain.Character>()
             .ToTable(t => t.HasCheckConstraint("CK_Characters_AgeRange", "MinAge >= 0 AND MaxAge >= MinAge AND MaxAge <= 18"));
+
+        modelBuilder.Entity<CharacterInstance>()
+            .ToTable(t => t.HasCheckConstraint("CK_CharacterInstances_AgeRange", "BaseMinAge >= 0 AND BaseMaxAge >= BaseMinAge AND BaseMaxAge <= 18"));
 
         // Memory Importance constraints
         modelBuilder.Entity<CharacterMemory>()

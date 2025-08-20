@@ -7,6 +7,7 @@ namespace Edory.Infrastructure.Repositories;
 
 /// <summary>
 /// PostgreSQL Implementation des CharacterInstance Repository
+/// ANGEPASST für vereinfachte CharacterInstance ohne Owned Types
 /// </summary>
 public class CharacterInstanceRepository : ICharacterInstanceRepository
 {
@@ -27,7 +28,7 @@ public class CharacterInstanceRepository : ICharacterInstanceRepository
     {
         return await _context.CharacterInstances
             .Where(ci => ci.OwnerFamilyId == familyId)
-            .OrderBy(ci => ci.BaseDna.Name)
+            .OrderBy(ci => ci.BaseName) // Verwende BaseName statt BaseDna.Name
             .ToListAsync(cancellationToken);
     }
 
@@ -74,5 +75,92 @@ public class CharacterInstanceRepository : ICharacterInstanceRepository
             _context.CharacterInstances.Remove(instance);
             await _context.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Sucht CharacterInstances nach Name (BaseName oder CustomName)
+    /// </summary>
+    public async Task<IReadOnlyList<CharacterInstance>> SearchByNameAsync(
+        string searchTerm, 
+        FamilyId? familyId = null, 
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.CharacterInstances.AsQueryable();
+        
+        if (familyId.HasValue)
+        {
+            query = query.Where(ci => ci.OwnerFamilyId == familyId.Value);
+        }
+        
+        return await query
+            .Where(ci => ci.BaseName.Contains(searchTerm) || 
+                        (ci.CustomName != null && ci.CustomName.Contains(searchTerm)))
+            .OrderBy(ci => ci.BaseName)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Gibt Statistiken über Trait-Entwicklung zurück
+    /// </summary>
+    public async Task<Dictionary<string, double>> GetTraitEvolutionStatsAsync(
+        CharacterInstanceId instanceId, 
+        CancellationToken cancellationToken = default)
+    {
+        var instance = await GetByIdAsync(instanceId, cancellationToken);
+        if (instance == null)
+            return new Dictionary<string, double>();
+
+        return new Dictionary<string, double>
+        {
+            ["CourageEvolution"] = instance.CurrentCourage - instance.BaseTraitsCourage,
+            ["CreativityEvolution"] = instance.CurrentCreativity - instance.BaseTraitsCreativity,
+            ["HelpfulnessEvolution"] = instance.CurrentHelpfulness - instance.BaseTraitsHelpfulness,
+            ["HumorEvolution"] = instance.CurrentHumor - instance.BaseTraitsHumor,
+            ["WisdomEvolution"] = instance.CurrentWisdom - instance.BaseTraitsWisdom,
+            ["CuriosityEvolution"] = instance.CurrentCuriosity - instance.BaseTraitsCuriosity,
+            ["EmpathyEvolution"] = instance.CurrentEmpathy - instance.BaseTraitsEmpathy,
+            ["PersistenceEvolution"] = instance.CurrentPersistence - instance.BaseTraitsPersistence,
+            ["AverageEvolution"] = new[]
+            {
+                instance.CurrentCourage - instance.BaseTraitsCourage,
+                instance.CurrentCreativity - instance.BaseTraitsCreativity,
+                instance.CurrentHelpfulness - instance.BaseTraitsHelpfulness,
+                instance.CurrentHumor - instance.BaseTraitsHumor,
+                instance.CurrentWisdom - instance.BaseTraitsWisdom,
+                instance.CurrentCuriosity - instance.BaseTraitsCuriosity,
+                instance.CurrentEmpathy - instance.BaseTraitsEmpathy,
+                instance.CurrentPersistence - instance.BaseTraitsPersistence
+            }.Average()
+        };
+    }
+
+    /// <summary>
+    /// Gibt CharacterInstances mit den höchsten Trait-Werten zurück
+    /// </summary>
+    public async Task<IReadOnlyList<CharacterInstance>> GetTopCharactersByTraitAsync(
+        string traitName, 
+        FamilyId familyId, 
+        int count = 5, 
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.CharacterInstances
+            .Where(ci => ci.OwnerFamilyId == familyId);
+
+        query = traitName.ToLower() switch
+        {
+            "courage" => query.OrderByDescending(ci => ci.CurrentCourage),
+            "creativity" => query.OrderByDescending(ci => ci.CurrentCreativity),
+            "helpfulness" => query.OrderByDescending(ci => ci.CurrentHelpfulness),
+            "humor" => query.OrderByDescending(ci => ci.CurrentHumor),
+            "wisdom" => query.OrderByDescending(ci => ci.CurrentWisdom),
+            "curiosity" => query.OrderByDescending(ci => ci.CurrentCuriosity),
+            "empathy" => query.OrderByDescending(ci => ci.CurrentEmpathy),
+            "persistence" => query.OrderByDescending(ci => ci.CurrentPersistence),
+            _ => query.OrderByDescending(ci => ci.LastInteractionAt)
+        };
+
+        return await query
+            .Take(count)
+            .ToListAsync(cancellationToken);
     }
 }
