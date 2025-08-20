@@ -188,6 +188,47 @@ public class CharactersController : ControllerBase
             return StatusCode(500, new { error = "Fehler beim Laden der öffentlichen Charaktere" });
         }
     }
+
+    [HttpGet]
+    public async Task<ActionResult<List<CharacterResponse>>> GetCharacters([FromQuery] Guid? familyId = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var effectiveFamilyId = familyId ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var characters = await _characterRepository.GetByCreatorFamilyAsync(FamilyId.From(effectiveFamilyId), cancellationToken);
+
+            var responses = characters.Select(character => new CharacterResponse
+            {
+                Id = character.Id.Value,
+                Name = character.Dna.Name,
+                Description = character.Dna.Description,
+                Appearance = character.Dna.Appearance,
+                Personality = character.Dna.Personality,
+                IsPublic = character.IsPublic,
+                CreatedAt = character.CreatedAt,
+                Traits = new TraitsResponse
+                {
+                    Courage = character.Dna.BaseTraits.Courage,
+                    Creativity = character.Dna.BaseTraits.Creativity,
+                    Helpfulness = character.Dna.BaseTraits.Helpfulness,
+                    Humor = character.Dna.BaseTraits.Humor,
+                    Wisdom = character.Dna.BaseTraits.Wisdom,
+                    Curiosity = character.Dna.BaseTraits.Curiosity,
+                    Empathy = character.Dna.BaseTraits.Empathy,
+                    Persistence = character.Dna.BaseTraits.Persistence
+                }
+            }).ToList();
+
+            _logger.LogInformation("Gefunden {Count} Charaktere für Familie {FamilyId}", responses.Count, effectiveFamilyId);
+
+            return Ok(responses);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fehler beim Laden der Charaktere");
+            return StatusCode(500, new { error = "Fehler beim Laden der Charaktere" });
+        }
+    }
 }
 
 // DTOs

@@ -1,85 +1,174 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Edory.Memory.Domain;
+using System.Text.Json;
 
 namespace Edory.Infrastructure.Data.Configurations;
 
 /// <summary>
-/// Entity Framework Configuration für CharacterMemory Entity
-/// Konfiguriert das hierarchische AI-Memory-System (Acute -> Thematic -> Personality)
+/// EF Core Konfiguration für CharacterMemory
+/// Definiert die PostgreSQL-Tabellenkonfiguration für das Gedächtnissystem
 /// </summary>
 public class CharacterMemoryConfiguration : IEntityTypeConfiguration<CharacterMemory>
 {
     public void Configure(EntityTypeBuilder<CharacterMemory> builder)
     {
-        builder.ToTable("CharacterMemories");
+        // Tabellenname
+        builder.ToTable("character_memories");
 
         // Primary Key
-        builder.HasKey(cm => cm.Id);
+        builder.HasKey(m => m.Id);
+        
+        // ID-Konvertierung (MemoryId ValueObject -> Guid)
+        builder.Property(m => m.Id)
+            .HasConversion(
+                id => id.Value,
+                value => MemoryId.From(value))
+            .HasColumnName("id");
 
-        // Properties
-        builder.Property(cm => cm.CharacterInstanceId)
-            .IsRequired();
-
-        builder.Property(cm => cm.MemoryType)
+        // CharacterInstanceId
+        builder.Property(m => m.CharacterInstanceId)
             .IsRequired()
-            .HasConversion<int>(); // Enum to int conversion
+            .HasColumnName("character_instance_id");
 
-        builder.Property(cm => cm.Content)
+        // Memory Type als Enum
+        builder.Property(m => m.Type)
             .IsRequired()
-            .HasColumnType("text"); // Für längere Texte
+            .HasConversion<string>() // Speichere als String in DB
+            .HasMaxLength(20)
+            .HasColumnName("type");
 
-        builder.Property(cm => cm.EmotionalContext)
-            .HasMaxLength(500)
-            .IsRequired(false);
-
-        builder.Property(cm => cm.Importance)
-            .IsRequired();
-
-        builder.Property(cm => cm.CreatedAt)
-            .IsRequired();
-
-        builder.Property(cm => cm.LastAccessedAt)
-            .IsRequired();
-
-        builder.Property(cm => cm.ConsolidatedAt)
-            .IsRequired(false);
-
-        builder.Property(cm => cm.IsActive)
+        // Zeitstempel
+        builder.Property(m => m.CreatedAt)
             .IsRequired()
-            .HasDefaultValue(true);
+            .HasColumnName("created_at");
 
-        builder.Property(cm => cm.RelatedStoryId)
-            .IsRequired(false);
+        builder.Property(m => m.LastUpdatedAt)
+            .IsRequired()
+            .HasColumnName("last_updated_at");
 
-        // Relationship zur CharacterInstance
-        builder.HasOne<Edory.Character.Domain.CharacterInstance>()
-            .WithMany()
-            .HasForeignKey(cm => cm.CharacterInstanceId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Memory Fragments als JSON
+        builder.Property(m => m.Fragments)
+            .HasConversion(
+                fragments => JsonSerializer.Serialize(fragments.Select(ConvertFragmentToJson), (JsonSerializerOptions?)null),
+                json => JsonSerializer.Deserialize<MemoryFragmentDto[]>(json, (JsonSerializerOptions?)null) != null 
+                    ? JsonSerializer.Deserialize<MemoryFragmentDto[]>(json, (JsonSerializerOptions?)null)!.Select(ConvertJsonToFragment).ToList() 
+                    : new List<MemoryFragment>(),
+                new ValueComparer<IReadOnlyList<MemoryFragment>>(
+                    (c1, c2) => c1!.SequenceEqual(c2!),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToList()))
+            .HasColumnType("jsonb") // PostgreSQL JSONB für Performance
+            .HasColumnName("fragments");
 
-        // Indexes für Performance-Optimierung des Memory-Systems
-        builder.HasIndex(cm => cm.CharacterInstanceId)
-            .HasDatabaseName("IX_CharacterMemories_CharacterInstanceId");
+        // Index für bessere Performance
+        builder.HasIndex(m => m.CharacterInstanceId)
+            .HasDatabaseName("ix_character_memories_character_instance_id");
 
-        builder.HasIndex(cm => cm.MemoryType)
-            .HasDatabaseName("IX_CharacterMemories_MemoryType");
+        builder.HasIndex(m => new { m.CharacterInstanceId, m.Type })
+            .IsUnique()
+            .HasDatabaseName("ix_character_memories_character_instance_type");
 
-        builder.HasIndex(cm => cm.Importance)
-            .HasDatabaseName("IX_CharacterMemories_Importance");
+        builder.HasIndex(m => m.Type)
+            .HasDatabaseName("ix_character_memories_type");
 
-        builder.HasIndex(cm => cm.CreatedAt)
-            .HasDatabaseName("IX_CharacterMemories_CreatedAt");
+        builder.HasIndex(m => m.LastUpdatedAt)
+            .HasDatabaseName("ix_character_memories_last_updated");
+    }
 
-        builder.HasIndex(cm => cm.IsActive)
-            .HasDatabaseName("IX_CharacterMemories_IsActive");
+    /// <summary>
+    /// DTO für JSON-Serialisierung von MemoryFragment
+    /// </summary>
+    private class MemoryFragmentDto
+    {
+        public Guid Id { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public string[] Tags { get; set; } = Array.Empty<string>();
+        public MemoryImportance Importance { get; set; }
+        public EmotionalContextDto EmotionalContext { get; set; } = new();
+        public DateTime Timestamp { get; set; }
+        public MemoryType Type { get; set; }
+        public bool IsActive { get; set; }
+    }
 
-        // Composite Index für Memory-Konsolidierung
-        builder.HasIndex(cm => new { cm.CharacterInstanceId, cm.MemoryType, cm.IsActive })
-            .HasDatabaseName("IX_CharacterMemories_Consolidation");
+    /// <summary>
+    /// DTO für JSON-Serialisierung von EmotionalContext
+    /// </summary>
+    private class EmotionalContextDto
+    {
+        public int Joy { get; set; }
+        public int Sadness { get; set; }
+        public int Fear { get; set; }
+        public int Anger { get; set; }
+        public int Surprise { get; set; }
+        public int Pride { get; set; }
+        public int Excitement { get; set; }
+        public int Calmness { get; set; }
+    }
 
-        // Index für Memory-Cleanup basierend auf Importance und Zugriff
-        builder.HasIndex(cm => new { cm.Importance, cm.LastAccessedAt, cm.IsActive })
-            .HasDatabaseName("IX_CharacterMemories_Cleanup");
+    /// <summary>
+    /// Konvertiert MemoryFragment zu DTO für JSON-Serialisierung
+    /// </summary>
+    private static MemoryFragmentDto ConvertFragmentToJson(MemoryFragment fragment)
+    {
+        return new MemoryFragmentDto
+        {
+            Id = fragment.Id,
+            Content = fragment.Content,
+            Tags = fragment.Tags,
+            Importance = fragment.Importance,
+            EmotionalContext = new EmotionalContextDto
+            {
+                Joy = fragment.EmotionalContext.Joy,
+                Sadness = fragment.EmotionalContext.Sadness,
+                Fear = fragment.EmotionalContext.Fear,
+                Anger = fragment.EmotionalContext.Anger,
+                Surprise = fragment.EmotionalContext.Surprise,
+                Pride = fragment.EmotionalContext.Pride,
+                Excitement = fragment.EmotionalContext.Excitement,
+                Calmness = fragment.EmotionalContext.Calmness
+            },
+            Timestamp = fragment.Timestamp,
+            Type = fragment.Type,
+            IsActive = fragment.IsActive
+        };
+    }
+
+    /// <summary>
+    /// Konvertiert DTO zu MemoryFragment
+    /// </summary>
+    private static MemoryFragment ConvertJsonToFragment(MemoryFragmentDto dto)
+    {
+        var emotionalContext = EmotionalContext.Create(
+            dto.EmotionalContext.Joy,
+            dto.EmotionalContext.Sadness,
+            dto.EmotionalContext.Fear,
+            dto.EmotionalContext.Anger,
+            dto.EmotionalContext.Surprise,
+            dto.EmotionalContext.Pride,
+            dto.EmotionalContext.Excitement,
+            dto.EmotionalContext.Calmness);
+
+        var fragment = MemoryFragment.Create(
+            dto.Content,
+            dto.Tags,
+            dto.Type,
+            dto.Importance,
+            emotionalContext,
+            dto.Timestamp);
+
+        // Setze die ID über Reflection (da private)
+        var idField = typeof(MemoryFragment).BaseType!
+            .GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        idField?.SetValue(fragment, dto.Id);
+
+        // Setze IsActive falls deaktiviert
+        if (!dto.IsActive)
+        {
+            fragment.Deactivate();
+        }
+
+        return fragment;
     }
 }

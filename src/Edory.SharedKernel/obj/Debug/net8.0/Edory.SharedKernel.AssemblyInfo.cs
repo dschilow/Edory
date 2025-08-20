@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Edory.SharedKernel")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0723279ed80ffbe72e3bb87906b7cd823ca9f35")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f3e54ce9948f37c4dc426eb2a40c124a314c2b6b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Edory.SharedKernel")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Edory.SharedKernel")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

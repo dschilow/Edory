@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Edory.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+595b11b2d8a3b5eb3ea3297937facddf2a9366ac")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f3e54ce9948f37c4dc426eb2a40c124a314c2b6b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Edory.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Edory.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

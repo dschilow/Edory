@@ -87,9 +87,9 @@ public class CharacterInstanceRepository : ICharacterInstanceRepository
     {
         var query = _context.CharacterInstances.AsQueryable();
         
-        if (familyId.HasValue)
+        if (familyId != null)
         {
-            query = query.Where(ci => ci.OwnerFamilyId == familyId.Value);
+            query = query.Where(ci => ci.OwnerFamilyId == familyId);
         }
         
         return await query

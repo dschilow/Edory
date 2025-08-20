@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Edory.Character.Domain;
+using Edory.SharedKernel.ValueObjects;
 
 namespace Edory.Infrastructure.Data.Configurations;
 
 /// <summary>
 /// Entity Framework Configuration für CharacterInstance Entity
-/// VEREINFACHTE VERSION ohne Owned Types - behebt EF Tracking-Probleme
+/// Vereinfachte Version ohne Owned Types
 /// </summary>
 public class CharacterInstanceConfiguration : IEntityTypeConfiguration<CharacterInstance>
 {
@@ -16,29 +17,28 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
 
         // Primary Key
         builder.HasKey(ci => ci.Id);
+        
+        // ID-Konvertierung (CharacterInstanceId ValueObject -> Guid)
+        builder.Property(ci => ci.Id)
+            .HasConversion(
+                id => id.Value,
+                value => CharacterInstanceId.From(value));
+
+        // OriginalCharacterId
+        builder.Property(ci => ci.OriginalCharacterId)
+            .HasConversion(
+                id => id.Value,
+                value => CharacterId.From(value))
+            .IsRequired();
+
+        // OwnerFamilyId
+        builder.Property(ci => ci.OwnerFamilyId)
+            .HasConversion(
+                id => id.Value,
+                value => FamilyId.From(value))
+            .IsRequired();
 
         // Basis-Properties
-        builder.Property(ci => ci.OriginalCharacterId)
-            .IsRequired();
-
-        builder.Property(ci => ci.OwnerFamilyId)
-            .IsRequired();
-
-        builder.Property(ci => ci.CustomName)
-            .HasMaxLength(100)
-            .IsRequired(false);
-
-        builder.Property(ci => ci.CreatedAt)
-            .IsRequired();
-
-        builder.Property(ci => ci.LastInteractionAt)
-            .IsRequired();
-
-        builder.Property(ci => ci.ExperienceCount)
-            .IsRequired()
-            .HasDefaultValue(0);
-
-        // Base DNA Properties - DIREKT als Spalten (KEINE Owned Types)
         builder.Property(ci => ci.BaseName)
             .IsRequired()
             .HasMaxLength(100);
@@ -61,7 +61,7 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
         builder.Property(ci => ci.BaseMaxAge)
             .IsRequired();
 
-        // Base Traits Properties - DIREKT als Spalten
+        // Base Traits
         builder.Property(ci => ci.BaseTraitsCourage)
             .IsRequired();
 
@@ -86,7 +86,7 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
         builder.Property(ci => ci.BaseTraitsPersistence)
             .IsRequired();
 
-        // Current Traits Properties - DIREKT als Spalten
+        // Current Traits
         builder.Property(ci => ci.CurrentCourage)
             .IsRequired();
 
@@ -111,55 +111,40 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
         builder.Property(ci => ci.CurrentPersistence)
             .IsRequired();
 
-        // Relationship zum ursprünglichen Character
+        // Weitere Properties
+        builder.Property(ci => ci.CustomName)
+            .HasMaxLength(100);
+
+        builder.Property(ci => ci.CreatedAt)
+            .IsRequired();
+
+        builder.Property(ci => ci.LastInteractionAt)
+            .IsRequired();
+
+        builder.Property(ci => ci.ExperienceCount)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        // Foreign Key zu Characters
         builder.HasOne<Character.Domain.Character>()
             .WithMany()
             .HasForeignKey(ci => ci.OriginalCharacterId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Check Constraints für Trait-Werte (0-100)
-        builder.ToTable(t =>
-        {
-            // Base Traits Constraints
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsCourage", "BaseTraitsCourage >= 0 AND BaseTraitsCourage <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsCreativity", "BaseTraitsCreativity >= 0 AND BaseTraitsCreativity <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsHelpfulness", "BaseTraitsHelpfulness >= 0 AND BaseTraitsHelpfulness <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsHumor", "BaseTraitsHumor >= 0 AND BaseTraitsHumor <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsWisdom", "BaseTraitsWisdom >= 0 AND BaseTraitsWisdom <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsCuriosity", "BaseTraitsCuriosity >= 0 AND BaseTraitsCuriosity <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsEmpathy", "BaseTraitsEmpathy >= 0 AND BaseTraitsEmpathy <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_BaseTraitsPersistence", "BaseTraitsPersistence >= 0 AND BaseTraitsPersistence <= 100");
-
-            // Current Traits Constraints
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentCourage", "CurrentCourage >= 0 AND CurrentCourage <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentCreativity", "CurrentCreativity >= 0 AND CurrentCreativity <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentHelpfulness", "CurrentHelpfulness >= 0 AND CurrentHelpfulness <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentHumor", "CurrentHumor >= 0 AND CurrentHumor <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentWisdom", "CurrentWisdom >= 0 AND CurrentWisdom <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentCuriosity", "CurrentCuriosity >= 0 AND CurrentCuriosity <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentEmpathy", "CurrentEmpathy >= 0 AND CurrentEmpathy <= 100");
-            t.HasCheckConstraint("CK_CharacterInstances_CurrentPersistence", "CurrentPersistence >= 0 AND CurrentPersistence <= 100");
-
-            // Age Range Constraint
-            t.HasCheckConstraint("CK_CharacterInstances_AgeRange", "BaseMinAge >= 0 AND BaseMaxAge >= BaseMinAge AND BaseMaxAge <= 18");
-        });
-
         // Indexes für Performance
-        builder.HasIndex(ci => ci.OriginalCharacterId)
-            .HasDatabaseName("IX_CharacterInstances_OriginalCharacterId");
-            
+        builder.HasIndex(ci => ci.BaseName)
+            .HasDatabaseName("IX_CharacterInstances_BaseName");
+
         builder.HasIndex(ci => ci.OwnerFamilyId)
             .HasDatabaseName("IX_CharacterInstances_OwnerFamilyId");
-            
+
+        builder.HasIndex(ci => ci.OriginalCharacterId)
+            .HasDatabaseName("IX_CharacterInstances_OriginalCharacterId");
+
         builder.HasIndex(ci => ci.LastInteractionAt)
             .HasDatabaseName("IX_CharacterInstances_LastInteractionAt");
 
-        // Composite Index für häufige Abfragen
         builder.HasIndex(ci => new { ci.OwnerFamilyId, ci.LastInteractionAt })
             .HasDatabaseName("IX_CharacterInstances_Family_LastInteraction");
-
-        // Index für Name-Suche
-        builder.HasIndex(ci => ci.BaseName)
-            .HasDatabaseName("IX_CharacterInstances_BaseName");
     }
 }

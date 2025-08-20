@@ -7,6 +7,7 @@ namespace Edory.Infrastructure.Repositories;
 
 /// <summary>
 /// PostgreSQL Implementation des Character Repository
+/// Verwaltet die Basis-Charaktere (Templates)
 /// </summary>
 public class CharacterRepository : ICharacterRepository
 {
@@ -23,7 +24,14 @@ public class CharacterRepository : ICharacterRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Character.Domain.Character>> GetPublicCharactersAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Characters
+            .OrderBy(c => c.Dna.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetPublicAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Characters
             .Where(c => c.IsPublic)
@@ -31,33 +39,42 @@ public class CharacterRepository : ICharacterRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Character.Domain.Character>> GetByIdsAsync(
-        IEnumerable<CharacterId> ids, 
-        CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Gibt alle öffentlichen Charaktere zurück (Alias für GetPublicAsync)
+    /// </summary>
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetPublicCharactersAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Characters
-            .Where(c => ids.Contains(c.Id))
-            .ToListAsync(cancellationToken);
+        return await GetPublicAsync(cancellationToken);
     }
 
-    public async Task<Character.Domain.Character?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetByCreatorAsync(FamilyId creatorFamilyId, CancellationToken cancellationToken = default)
     {
         return await _context.Characters
-            .FirstOrDefaultAsync(c => c.Dna.Name == name, cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<Character.Domain.Character>> GetByCreatorFamilyAsync(FamilyId familyId, CancellationToken cancellationToken = default)
-    {
-        return await _context.Characters
-            .Where(c => c.CreatorFamilyId == familyId)
+            .Where(c => c.CreatorFamilyId == creatorFamilyId)
             .OrderBy(c => c.Dna.Name)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Character.Domain.Character>> SearchAsync(
-        string searchTerm, 
-        bool publicOnly = true, 
-        CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Gibt alle Charaktere einer Familie zurück (Alias für GetByCreatorAsync)
+    /// </summary>
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetByCreatorFamilyAsync(FamilyId familyId, CancellationToken cancellationToken = default)
+    {
+        return await GetByCreatorAsync(familyId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Character.Domain.Character>> SearchByNameAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        return await _context.Characters
+            .Where(c => c.Dna.Name.Contains(searchTerm) || c.Dna.Description.Contains(searchTerm))
+            .OrderBy(c => c.Dna.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Sucht Charaktere nach Name oder Beschreibung
+    /// </summary>
+    public async Task<IReadOnlyList<Character.Domain.Character>> SearchAsync(string searchTerm, bool publicOnly = true, CancellationToken cancellationToken = default)
     {
         var query = _context.Characters.AsQueryable();
         
@@ -67,8 +84,15 @@ public class CharacterRepository : ICharacterRepository
         }
         
         return await query
-            .Where(c => c.Dna.Name.Contains(searchTerm) || 
-                       c.Dna.Description.Contains(searchTerm))
+            .Where(c => c.Dna.Name.Contains(searchTerm) || c.Dna.Description.Contains(searchTerm))
+            .OrderBy(c => c.Dna.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Character.Domain.Character>> GetByAgeRangeAsync(int minAge, int maxAge, CancellationToken cancellationToken = default)
+    {
+        return await _context.Characters
+            .Where(c => c.Dna.MinAge <= maxAge && c.Dna.MaxAge >= minAge)
             .OrderBy(c => c.Dna.Name)
             .ToListAsync(cancellationToken);
     }
@@ -90,27 +114,22 @@ public class CharacterRepository : ICharacterRepository
         var character = await GetByIdAsync(id, cancellationToken);
         if (character != null)
         {
-            // Character kann nur gelöscht werden wenn keine Instanzen existieren
-            var hasInstances = await _context.CharacterInstances
-                .AnyAsync(ci => ci.OriginalCharacterId == id, cancellationToken);
-            
-            if (hasInstances)
-                throw new InvalidOperationException("Character cannot be deleted while instances exist");
-                
             _context.Characters.Remove(character);
             await _context.SaveChangesAsync(cancellationToken);
         }
     }
 
-    public async Task<bool> ExistsAsync(CharacterId id, CancellationToken cancellationToken = default)
+    public async Task IncrementAdoptionCountAsync(CharacterId id, CancellationToken cancellationToken = default)
     {
-        return await _context.Characters
-            .AnyAsync(c => c.Id == id, cancellationToken);
-    }
-
-    public async Task<int> CountAsync(CancellationToken cancellationToken = default)
-    {
-        return await _context.Characters
-            .CountAsync(cancellationToken);
+        var character = await GetByIdAsync(id, cancellationToken);
+        if (character != null)
+        {
+            // Da AdoptionCount private ist, müssen wir es über die Domain-Methode erhöhen
+            // Für jetzt verwenden wir einen direkten Update
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE \"Characters\" SET \"AdoptionCount\" = \"AdoptionCount\" + 1 WHERE \"Id\" = {0}",
+                id.Value,
+                cancellationToken);
+        }
     }
 }

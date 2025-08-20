@@ -102,8 +102,6 @@ public class CharacterConfiguration : IEntityTypeConfiguration<Character.Domain.
         builder.HasIndex(c => c.CreatorFamilyId)
             .HasDatabaseName("IX_Characters_CreatorFamilyId");
 
-        // Zusätzlicher Index für Name-Suche
-        builder.HasIndex("Name")
-            .HasDatabaseName("IX_Characters_Name");
+        // Hinweis: Name-Index wird über SQL-Query optimiert, da Owned Type-Indizes komplex sind
     }
 }

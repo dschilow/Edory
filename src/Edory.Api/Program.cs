@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Edory.Infrastructure.Data;
 using Edory.Infrastructure.Repositories;
 using Edory.Character.Domain.Repositories;
-using Edory.Memory.Domain.Repositories;
+// using Edory.Memory.Domain.Repositories; // VORERST DEAKTIVIERT
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,10 +21,11 @@ builder.Services.AddDbContext<EdoryDbContext>(options =>
     }
 });
 
-// Repository Registration
+// Repository Registration - MEMORY VORERST DEAKTIVIERT
 builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
 builder.Services.AddScoped<ICharacterInstanceRepository, CharacterInstanceRepository>();
-builder.Services.AddScoped<ICharacterMemoryRepository, CharacterMemoryRepository>();
+// builder.Services.AddScoped<ICharacterMemoryRepository, CharacterMemoryRepository>(); // VORERST DEAKTIVIERT
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -36,6 +37,7 @@ builder.Services.AddControllers()
         // Ignoriere null values
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -83,9 +85,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Avatales API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Edory API v1");
         c.RoutePrefix = "swagger";
-        c.DocumentTitle = "Avatales API Documentation";
+        c.DocumentTitle = "Edory API Documentation";
     });
 }
 
@@ -94,7 +96,7 @@ app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
 
-Console.WriteLine("🚀 Avatales API gestartet!");
+Console.WriteLine("🚀 Edory API gestartet!");
 Console.WriteLine($"🌐 Swagger UI: {(app.Environment.IsDevelopment() ? "https://localhost:5221/swagger" : "N/A")}");
 Console.WriteLine($"📡 API Base URL: https://localhost:5221/api");
 
