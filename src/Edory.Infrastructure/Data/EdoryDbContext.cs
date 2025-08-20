@@ -21,8 +21,8 @@ public class EdoryDbContext : DbContext
     // Memory Context
     public DbSet<CharacterMemory> CharacterMemories { get; set; } = null!;
 
-    // Story Context
-    public DbSet<Story.Domain.Story> Stories { get; set; } = null!;
+    // Story Context vorerst deaktiviert (fehlende EF-Mappings)
+    // public DbSet<Story.Domain.Story> Stories { get; set; } = null!;
 
     // Learning Context - TODO: Implement when Learning Domain is complete
     // public DbSet<LearningProfile> LearningProfiles { get; set; } = null!;
@@ -73,12 +73,12 @@ public class EdoryDbContext : DbContext
                 id => id.Value,
                 value => FamilyId.From(value));
 
-        // StoryId Value Object
-        modelBuilder.Entity<Story.Domain.Story>()
-            .Property(s => s.Id)
-            .HasConversion(
-                id => id.Value,
-                value => StoryId.From(value));
+        // StoryId Value Object vorerst deaktiviert (Story-Mapping ausgesetzt)
+        // modelBuilder.Entity<Story.Domain.Story>()
+        //     .Property(s => s.Id)
+        //     .HasConversion(
+        //         id => id.Value,
+        //         value => StoryId.From(value));
 
         // MemoryId Value Objects
         modelBuilder.Entity<CharacterMemory>()
