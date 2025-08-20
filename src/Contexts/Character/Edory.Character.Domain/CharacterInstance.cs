@@ -8,6 +8,7 @@ namespace Edory.Character.Domain;
 /// <summary>
 /// Charakter-Instanz - Eine spezifische Incarnation eines Charakters in einer Familie
 /// Entwickelt sich basierend auf den Erfahrungen in dieser Familie
+/// KORRIGIERTE VERSION ohne EF Tracking-Probleme
 /// </summary>
 public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
 {
@@ -39,48 +40,71 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
             Id, originalCharacterId, ownerFamilyId, baseDna));
     }
     
-    private CharacterInstance() { } // Für EF Core
+    private CharacterInstance() : base(CharacterInstanceId.From(Guid.Empty)) 
+    { 
+        // Für EF Core - Parameter werden durch EF gesetzt
+    }
     
     /// <summary>
     /// Erstellt eine neue Charakter-Instanz basierend auf einem Charakter-Template
+    /// KORRIGIERTE VERSION
     /// </summary>
     public static CharacterInstance CreateFromCharacter(
         Character character,
         FamilyId ownerFamilyId)
     {
-        if (!character.IsPublic && character.CreatorFamilyId != ownerFamilyId)
-            throw new InvalidOperationException("Privater Charakter kann nur von der Ersteller-Familie instanziiert werden");
+        if (character == null)
+            throw new ArgumentNullException(nameof(character));
+            
+        if (ownerFamilyId == null)
+            throw new ArgumentNullException(nameof(ownerFamilyId));
+
+        var instanceId = CharacterInstanceId.New();
+        var now = DateTime.UtcNow;
         
+        // Erstelle eine Kopie der DNA für diese Instanz
+        var baseDnaCopy = CharacterDna.Create(
+            character.Dna.Name,
+            character.Dna.Description,
+            character.Dna.BaseTraits, // Traits werden kopiert, nicht referenziert
+            character.Dna.Appearance,
+            character.Dna.Personality,
+            character.Dna.MinAge,
+            character.Dna.MaxAge
+        );
+
         return new CharacterInstance(
-            CharacterInstanceId.New(),
+            instanceId,
             character.Id,
             ownerFamilyId,
-            character.Dna,
-            DateTime.UtcNow);
+            baseDnaCopy,
+            now);
     }
     
     /// <summary>
-    /// Erstellt eine direkte Instanz für die Ersteller-Familie
+    /// Erstellt die Original-Instanz für den Ersteller des Charakters
+    /// NEUE METHODE
     /// </summary>
     public static CharacterInstance CreateOriginal(
         Character character,
         FamilyId creatorFamilyId)
     {
+        if (character == null)
+            throw new ArgumentNullException(nameof(character));
+            
+        if (creatorFamilyId == null)
+            throw new ArgumentNullException(nameof(creatorFamilyId));
+
         if (character.CreatorFamilyId != creatorFamilyId)
-            throw new InvalidOperationException("Nur die Ersteller-Familie kann die Original-Instanz erstellen");
-        
-        return new CharacterInstance(
-            CharacterInstanceId.New(),
-            character.Id,
-            creatorFamilyId,
-            character.Dna,
-            DateTime.UtcNow);
+            throw new ArgumentException("Nur die Ersteller-Familie kann die Original-Instanz erstellen");
+
+        return CreateFromCharacter(character, creatorFamilyId);
     }
     
     /// <summary>
-    /// Entwickelt die Charaktereigenschaften basierend auf einer Erfahrung
+    /// Entwickelt die Eigenschaften basierend auf Geschichtserfahrungen
     /// </summary>
-    public void EvolveFromExperience(
+    public void EvolveTraits(
         int courageChange = 0,
         int creativityChange = 0,
         int helpfulnessChange = 0,
@@ -91,11 +115,17 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
         int persistenceChange = 0)
     {
         var oldTraits = CurrentTraits;
-        CurrentTraits = CurrentTraits.Evolve(
-            courageChange, creativityChange, helpfulnessChange, 
-            humorChange, wisdomChange, curiosityChange, 
-            empathyChange, persistenceChange);
         
+        CurrentTraits = CurrentTraits.Evolve(
+            courageChange,
+            creativityChange,
+            helpfulnessChange,
+            humorChange,
+            wisdomChange,
+            curiosityChange,
+            empathyChange,
+            persistenceChange);
+            
         ExperienceCount++;
         LastInteractionAt = DateTime.UtcNow;
         
@@ -104,35 +134,47 @@ public sealed class CharacterInstance : AggregateRoot<CharacterInstanceId>
     }
     
     /// <summary>
-    /// Setzt einen benutzerdefinierten Namen für diese Instanz
+    /// Setzt einen benutzerdefinierten Namen für den Charakter
     /// </summary>
     public void SetCustomName(string? customName)
     {
-        if (!string.IsNullOrWhiteSpace(customName) && customName.Length > 50)
-            throw new ArgumentException("Benutzerdefinierter Name darf maximal 50 Zeichen lang sein");
-        
-        var oldName = CustomName;
+        if (!string.IsNullOrWhiteSpace(customName) && customName.Length > 100)
+            throw new ArgumentException("Custom Name darf nicht länger als 100 Zeichen sein");
+            
         CustomName = string.IsNullOrWhiteSpace(customName) ? null : customName.Trim();
-        
-        AddDomainEvent(new CharacterInstanceRenamedEvent(
-            Id, OriginalCharacterId, OwnerFamilyId, oldName, CustomName));
+        LastInteractionAt = DateTime.UtcNow;
     }
     
     /// <summary>
-    /// Aktualisiert den Zeitpunkt der letzten Interaktion
+    /// Aktualisiert die letzte Interaktionszeit
     /// </summary>
     public void RecordInteraction()
     {
         LastInteractionAt = DateTime.UtcNow;
-        AddDomainEvent(new CharacterInteractionRecordedEvent(
-            Id, OriginalCharacterId, OwnerFamilyId, LastInteractionAt));
     }
     
     /// <summary>
-    /// Gibt den anzuzeigenden Namen zurück (Custom oder Original)
+    /// Gibt den effektiven Namen zurück (Custom Name oder Original Name)
     /// </summary>
     public string GetDisplayName()
     {
         return !string.IsNullOrWhiteSpace(CustomName) ? CustomName : BaseDna.Name;
+    }
+    
+    /// <summary>
+    /// Berechnet die Entwicklung der Eigenschaften seit der Erstellung
+    /// </summary>
+    public CharacterTraits GetTraitEvolution()
+    {
+        return CharacterTraits.Create(
+            CurrentTraits.Courage - BaseDna.BaseTraits.Courage,
+            CurrentTraits.Creativity - BaseDna.BaseTraits.Creativity,
+            CurrentTraits.Helpfulness - BaseDna.BaseTraits.Helpfulness,
+            CurrentTraits.Humor - BaseDna.BaseTraits.Humor,
+            CurrentTraits.Wisdom - BaseDna.BaseTraits.Wisdom,
+            CurrentTraits.Curiosity - BaseDna.BaseTraits.Curiosity,
+            CurrentTraits.Empathy - BaseDna.BaseTraits.Empathy,
+            CurrentTraits.Persistence - BaseDna.BaseTraits.Persistence
+        );
     }
 }

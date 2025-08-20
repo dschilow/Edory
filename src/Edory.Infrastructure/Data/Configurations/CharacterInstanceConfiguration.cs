@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Edory.Character.Domain;
-using System.Text.Json;
 
 namespace Edory.Infrastructure.Data.Configurations;
 
 /// <summary>
 /// Entity Framework Configuration für CharacterInstance Entity
+/// Korrigierte Version ohne EF Tracking-Konflikte
 /// </summary>
 public class CharacterInstanceConfiguration : IEntityTypeConfiguration<CharacterInstance>
 {
@@ -18,6 +18,16 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
         builder.HasKey(ci => ci.Id);
 
         // Properties
+        builder.Property(ci => ci.OriginalCharacterId)
+            .IsRequired();
+
+        builder.Property(ci => ci.OwnerFamilyId)
+            .IsRequired();
+
+        builder.Property(ci => ci.CustomName)
+            .HasMaxLength(100)
+            .IsRequired(false);
+
         builder.Property(ci => ci.CreatedAt)
             .IsRequired();
 
@@ -28,92 +38,114 @@ public class CharacterInstanceConfiguration : IEntityTypeConfiguration<Character
             .IsRequired()
             .HasDefaultValue(0);
 
-        builder.Property(ci => ci.CustomName)
-            .HasMaxLength(100);
-
-        // BaseDna as Owned Entity
-        builder.OwnsOne(ci => ci.BaseDna, dna =>
+        // BaseDna als Owned Entity - VEREINFACHT
+        builder.OwnsOne(ci => ci.BaseDna, baseDna =>
         {
-            dna.Property(d => d.Name)
+            baseDna.Property(d => d.Name)
                 .HasColumnName("BaseName")
                 .IsRequired()
                 .HasMaxLength(100);
 
-            dna.Property(d => d.Description)
+            baseDna.Property(d => d.Description)
                 .HasColumnName("BaseDescription")
                 .IsRequired()
                 .HasMaxLength(1000);
 
-            dna.Property(d => d.Appearance)
+            baseDna.Property(d => d.Appearance)
                 .HasColumnName("BaseAppearance")
                 .IsRequired()
                 .HasMaxLength(500);
 
-            dna.Property(d => d.Personality)
+            baseDna.Property(d => d.Personality)
                 .HasColumnName("BasePersonality")
                 .IsRequired()
                 .HasMaxLength(1000);
 
-            dna.Property(d => d.MinAge)
+            baseDna.Property(d => d.MinAge)
                 .HasColumnName("BaseMinAge")
                 .IsRequired();
 
-            dna.Property(d => d.MaxAge)
+            baseDna.Property(d => d.MaxAge)
                 .HasColumnName("BaseMaxAge")
                 .IsRequired();
 
-            // BaseTraits as owned type
-            dna.OwnsOne(d => d.BaseTraits, traits =>
+            // BaseTraits direkt als Properties - KORRIGIERT
+            baseDna.OwnsOne(d => d.BaseTraits, baseTraits =>
             {
-                traits.Property(t => t.Courage)
-                    .HasColumnName("BaseTraitsCourage");
-                traits.Property(t => t.Creativity)
-                    .HasColumnName("BaseTraitsCreativity");
-                traits.Property(t => t.Helpfulness)
-                    .HasColumnName("BaseTraitsHelpfulness");
-                traits.Property(t => t.Humor)
-                    .HasColumnName("BaseTraitsHumor");
-                traits.Property(t => t.Wisdom)
-                    .HasColumnName("BaseTraitsWisdom");
-                traits.Property(t => t.Curiosity)
-                    .HasColumnName("BaseTraitsCuriosity");
-                traits.Property(t => t.Empathy)
-                    .HasColumnName("BaseTraitsEmpathy");
-                traits.Property(t => t.Persistence)
-                    .HasColumnName("BaseTraitsPersistence");
+                baseTraits.Property(t => t.Courage)
+                    .HasColumnName("BaseTraitsCourage")
+                    .IsRequired();
+                baseTraits.Property(t => t.Creativity)
+                    .HasColumnName("BaseTraitsCreativity")
+                    .IsRequired();
+                baseTraits.Property(t => t.Helpfulness)
+                    .HasColumnName("BaseTraitsHelpfulness")
+                    .IsRequired();
+                baseTraits.Property(t => t.Humor)
+                    .HasColumnName("BaseTraitsHumor")
+                    .IsRequired();
+                baseTraits.Property(t => t.Wisdom)
+                    .HasColumnName("BaseTraitsWisdom")
+                    .IsRequired();
+                baseTraits.Property(t => t.Curiosity)
+                    .HasColumnName("BaseTraitsCuriosity")
+                    .IsRequired();
+                baseTraits.Property(t => t.Empathy)
+                    .HasColumnName("BaseTraitsEmpathy")
+                    .IsRequired();
+                baseTraits.Property(t => t.Persistence)
+                    .HasColumnName("BaseTraitsPersistence")
+                    .IsRequired();
             });
         });
 
-        builder.OwnsOne(ci => ci.CurrentTraits, traits =>
+        // CurrentTraits als separates Owned Entity - KORRIGIERT
+        builder.OwnsOne(ci => ci.CurrentTraits, currentTraits =>
         {
-            traits.Property(t => t.Courage)
-                .HasColumnName("CurrentCourage");
-            traits.Property(t => t.Creativity)
-                .HasColumnName("CurrentCreativity");
-            traits.Property(t => t.Helpfulness)
-                .HasColumnName("CurrentHelpfulness");
-            traits.Property(t => t.Humor)
-                .HasColumnName("CurrentHumor");
-            traits.Property(t => t.Wisdom)
-                .HasColumnName("CurrentWisdom");
-            traits.Property(t => t.Curiosity)
-                .HasColumnName("CurrentCuriosity");
-            traits.Property(t => t.Empathy)
-                .HasColumnName("CurrentEmpathy");
-            traits.Property(t => t.Persistence)
-                .HasColumnName("CurrentPersistence");
+            currentTraits.Property(t => t.Courage)
+                .HasColumnName("CurrentCourage")
+                .IsRequired();
+            currentTraits.Property(t => t.Creativity)
+                .HasColumnName("CurrentCreativity")
+                .IsRequired();
+            currentTraits.Property(t => t.Helpfulness)
+                .HasColumnName("CurrentHelpfulness")
+                .IsRequired();
+            currentTraits.Property(t => t.Humor)
+                .HasColumnName("CurrentHumor")
+                .IsRequired();
+            currentTraits.Property(t => t.Wisdom)
+                .HasColumnName("CurrentWisdom")
+                .IsRequired();
+            currentTraits.Property(t => t.Curiosity)
+                .HasColumnName("CurrentCuriosity")
+                .IsRequired();
+            currentTraits.Property(t => t.Empathy)
+                .HasColumnName("CurrentEmpathy")
+                .IsRequired();
+            currentTraits.Property(t => t.Persistence)
+                .HasColumnName("CurrentPersistence")
+                .IsRequired();
         });
 
-        // Relationships
+        // Relationship zum ursprünglichen Character
         builder.HasOne<Character.Domain.Character>()
             .WithMany()
             .HasForeignKey(ci => ci.OriginalCharacterId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Indexes for performance
-        builder.HasIndex(ci => ci.OriginalCharacterId);
-        builder.HasIndex(ci => ci.OwnerFamilyId);
-        builder.HasIndex(ci => ci.LastInteractionAt);
-        builder.HasIndex(ci => ci.CreatedAt);
+        // Indexes für Performance
+        builder.HasIndex(ci => ci.OriginalCharacterId)
+            .HasDatabaseName("IX_CharacterInstances_OriginalCharacterId");
+            
+        builder.HasIndex(ci => ci.OwnerFamilyId)
+            .HasDatabaseName("IX_CharacterInstances_OwnerFamilyId");
+            
+        builder.HasIndex(ci => ci.LastInteractionAt)
+            .HasDatabaseName("IX_CharacterInstances_LastInteractionAt");
+
+        // Composite Index für häufige Abfragen
+        builder.HasIndex(ci => new { ci.OwnerFamilyId, ci.LastInteractionAt })
+            .HasDatabaseName("IX_CharacterInstances_Family_LastInteraction");
     }
 }

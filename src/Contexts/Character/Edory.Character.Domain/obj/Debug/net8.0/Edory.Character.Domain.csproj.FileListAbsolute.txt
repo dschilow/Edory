@@ -1,0 +1,16 @@
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\bin\Debug\net8.0\Edory.Character.Domain.deps.json
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\bin\Debug\net8.0\Edory.Character.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\bin\Debug\net8.0\Edory.Character.Domain.pdb
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\bin\Debug\net8.0\Edory.SharedKernel.dll
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\bin\Debug\net8.0\Edory.SharedKernel.pdb
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.csproj.AssemblyReference.cache
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.AssemblyInfoInputs.cache
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.AssemblyInfo.cs
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.csproj.CoreCompileInputs.cache
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.sourcelink.json
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Ch.7F391181.Up2Date
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\refint\Edory.Character.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\Edory.Character.Domain.pdb
+C:\MyProjects\Edory\src\Contexts\Character\Edory.Character.Domain\obj\Debug\net8.0\ref\Edory.Character.Domain.dll

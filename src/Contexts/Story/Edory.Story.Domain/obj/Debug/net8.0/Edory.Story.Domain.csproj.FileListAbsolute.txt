@@ -1,0 +1,16 @@
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\bin\Debug\net8.0\Edory.Story.Domain.deps.json
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\bin\Debug\net8.0\Edory.Story.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\bin\Debug\net8.0\Edory.Story.Domain.pdb
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\bin\Debug\net8.0\Edory.SharedKernel.dll
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\bin\Debug\net8.0\Edory.SharedKernel.pdb
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.csproj.AssemblyReference.cache
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.AssemblyInfoInputs.cache
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.AssemblyInfo.cs
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.csproj.CoreCompileInputs.cache
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.sourcelink.json
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.St.EF628556.Up2Date
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\refint\Edory.Story.Domain.dll
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\Edory.Story.Domain.pdb
+C:\MyProjects\Edory\src\Contexts\Story\Edory.Story.Domain\obj\Debug\net8.0\ref\Edory.Story.Domain.dll

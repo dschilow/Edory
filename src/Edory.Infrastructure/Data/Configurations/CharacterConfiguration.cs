@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Edory.Character.Domain;
 using Edory.SharedKernel.ValueObjects;
-using System.Text.Json;
 
 namespace Edory.Infrastructure.Data.Configurations;
 
 /// <summary>
 /// Entity Framework Configuration für Character Entity
+/// Korrigierte Version ohne Tracking-Konflikte bei Owned Types
 /// </summary>
 public class CharacterConfiguration : IEntityTypeConfiguration<Character.Domain.Character>
 {
@@ -30,9 +30,10 @@ public class CharacterConfiguration : IEntityTypeConfiguration<Character.Domain.
             .IsRequired()
             .HasDefaultValue(0);
 
-        // CharacterDna as Owned Entity
+        // CharacterDna als Owned Entity - KORRIGIERT
         builder.OwnsOne(c => c.Dna, dna =>
         {
+            // DNA Basis-Properties
             dna.Property(d => d.Name)
                 .HasColumnName("Name")
                 .IsRequired()
@@ -61,31 +62,48 @@ public class CharacterConfiguration : IEntityTypeConfiguration<Character.Domain.
                 .HasColumnName("MaxAge")
                 .IsRequired();
 
-            // BaseTraits as owned type
+            // BaseTraits als Value Object - KORRIGIERT mit eindeutigen Spalten
             dna.OwnsOne(d => d.BaseTraits, traits =>
             {
                 traits.Property(t => t.Courage)
-                    .HasColumnName("BaseCourage");
+                    .HasColumnName("BaseCourage")
+                    .IsRequired();
                 traits.Property(t => t.Creativity)
-                    .HasColumnName("BaseCreativity");
+                    .HasColumnName("BaseCreativity")
+                    .IsRequired();
                 traits.Property(t => t.Helpfulness)
-                    .HasColumnName("BaseHelpfulness");
+                    .HasColumnName("BaseHelpfulness")
+                    .IsRequired();
                 traits.Property(t => t.Humor)
-                    .HasColumnName("BaseHumor");
+                    .HasColumnName("BaseHumor")
+                    .IsRequired();
                 traits.Property(t => t.Wisdom)
-                    .HasColumnName("BaseWisdom");
+                    .HasColumnName("BaseWisdom")
+                    .IsRequired();
                 traits.Property(t => t.Curiosity)
-                    .HasColumnName("BaseCuriosity");
+                    .HasColumnName("BaseCuriosity")
+                    .IsRequired();
                 traits.Property(t => t.Empathy)
-                    .HasColumnName("BaseEmpathy");
+                    .HasColumnName("BaseEmpathy")
+                    .IsRequired();
                 traits.Property(t => t.Persistence)
-                    .HasColumnName("BasePersistence");
+                    .HasColumnName("BasePersistence")
+                    .IsRequired();
             });
         });
 
-        // Indexes for performance
-        builder.HasIndex(c => c.IsPublic);
-        builder.HasIndex(c => c.CreatedAt);
-        builder.HasIndex(c => c.CreatorFamilyId);
+        // Indexes für Performance
+        builder.HasIndex(c => c.IsPublic)
+            .HasDatabaseName("IX_Characters_IsPublic");
+            
+        builder.HasIndex(c => c.CreatedAt)
+            .HasDatabaseName("IX_Characters_CreatedAt");
+            
+        builder.HasIndex(c => c.CreatorFamilyId)
+            .HasDatabaseName("IX_Characters_CreatorFamilyId");
+
+        // Zusätzlicher Index für Name-Suche
+        builder.HasIndex("Name")
+            .HasDatabaseName("IX_Characters_Name");
     }
 }

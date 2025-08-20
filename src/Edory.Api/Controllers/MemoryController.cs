@@ -297,3 +297,4 @@ public class ConsolidationResultDto
     public string Message { get; set; } = string.Empty;
 }
 
+
