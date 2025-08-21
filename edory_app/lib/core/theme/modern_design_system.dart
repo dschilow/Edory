@@ -1,6 +1,8 @@
 // lib/core/theme/modern_design_system.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'avatales_app_colors.dart' as Av;
+import 'avatales_app_typography.dart' as Ty;
 
 /// Modern Design System - Wunderschönes Premium Design
 /// Inspiriert von den besten Social Media und Wellness Apps
@@ -8,48 +10,48 @@ class ModernDesignSystem {
   
   // MARK: - Wunderschöne Premium Farben
   
-  /// Hauptfarben - Moderne Gradients & Premium Look
-  static const Color primaryBlue = Color(0xFF667EEA);         // Premium Blau
-  static const Color primaryPurple = Color(0xFF764BA2);       // Elegantes Lila  
-  static const Color primaryPink = Color(0xFFF093FB);         // Lebendiges Pink
-  static const Color primaryGreen = Color(0xFF4ECDC4);        // Frisches Türkis
-  static const Color primaryOrange = Color(0xFFFFA726);       // Warmes Orange
-  static const Color primaryRed = Color(0xFFFF6B6B);          // Sanftes Rot
+  /// Hauptfarben - an neues Avatales Theme angepasst
+  static const Color primaryBlue = Av.AppColors.primaryBlue;
+  static const Color primaryPurple = Av.AppColors.primaryPurple;      
+  static const Color primaryPink = Av.AppColors.primaryPink;
+  static const Color primaryGreen = Av.AppColors.primaryGreen;
+  static const Color primaryOrange = Av.AppColors.primaryOrange;
+  static const Color primaryRed = Av.AppColors.primaryRed;
   
   /// Background Colors (Ultra-Premium Look)
-  static const Color backgroundPrimary = Color(0xFFFAFAFA);   // Soft White
-  static const Color backgroundSecondary = Color(0xFFFFFFFF); // Pure White
-  static const Color backgroundTertiary = Color(0xFFF8F9FA);  // Light Gray
-  static const Color backgroundCard = Color(0xFFFFFFFF);      // Card White
+  static const Color backgroundPrimary = Av.AppColors.backgroundPrimary;
+  static const Color backgroundSecondary = Av.AppColors.backgroundSecondary;
+  static const Color backgroundTertiary = Av.AppColors.backgroundTertiary;
+  static const Color backgroundCard = Av.AppColors.backgroundSecondary;
   
   // Legacy Support für bestehende Dateien
   static const Color cardBackground = backgroundCard;         // Card White
-  static const Color borderColor = Color(0xFFE5E7EB);         // Border Gray
+  static const Color borderColor = Av.AppColors.borderPrimary;
   
   /// Text Colors (Perfekte Hierarchie)
-  static const Color textPrimary = Color(0xFF111827);         // Dark Gray
-  static const Color textSecondary = Color(0xFF6B7280);       // Medium Gray
-  static const Color textTertiary = Color(0xFF9CA3AF);        // Light Gray
-  static const Color textLight = Color(0xFFFFFFFF);           // White
+  static const Color textPrimary = Av.AppColors.textPrimary;
+  static const Color textSecondary = Av.AppColors.textSecondary;
+  static const Color textTertiary = Av.AppColors.textTertiary;
+  static const Color textLight = Av.AppColors.textInverse;
   
   /// Accent Colors (Instagram-Style)
-  static const Color accentBlue = Color(0xFF3B82F6);          
-  static const Color accentGreen = Color(0xFF10B981);         
-  static const Color accentOrange = Color(0xFFF59E0B);        
-  static const Color accentRed = Color(0xFFEF4444);           
-  static const Color accentPurple = Color(0xFF8B5CF6);        
-  static const Color accentTeal = Color(0xFF06B6D4);          
-  static const Color accentPink = Color(0xFFEC4899);          
+  static const Color accentBlue = Av.AppColors.systemBlue;          
+  static const Color accentGreen = Av.AppColors.systemGreen;         
+  static const Color accentOrange = Av.AppColors.systemOrange;        
+  static const Color accentRed = Av.AppColors.systemRed;           
+  static const Color accentPurple = Av.AppColors.systemPurple;        
+  static const Color accentTeal = Av.AppColors.systemTeal;          
+  static const Color accentPink = Av.AppColors.systemPink;          
   
   /// System Colors (iOS-kompatibel)
-  static const Color systemGray6 = Color(0xFFF2F2F7);
-  static const Color systemGray4 = Color(0xFFD1D1D6);
-  static const Color systemGray = Color(0xFF8E8E93);
-  static const Color systemBlue = accentBlue;
-  static const Color systemRed = accentRed;
-  static const Color systemGreen = accentGreen;
-  static const Color systemPurple = accentPurple;
-  static const Color systemYellow = Color(0xFFFFCC00);
+  static const Color systemGray6 = Av.AppColors.gray6;
+  static const Color systemGray4 = Av.AppColors.gray4;
+  static const Color systemGray = Av.AppColors.gray1;
+  static const Color systemBlue = Av.AppColors.systemBlue;
+  static const Color systemRed = Av.AppColors.systemRed;
+  static const Color systemGreen = Av.AppColors.systemGreen;
+  static const Color systemPurple = Av.AppColors.systemPurple;
+  static const Color systemYellow = Av.AppColors.systemYellow;
   
   // Legacy Support
   static const Color primaryColor = accentBlue;
@@ -76,57 +78,25 @@ class ModernDesignSystem {
   
   // MARK: - Instagram-Style Gradients (PREMIUM!)
   
-  static const LinearGradient primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-  );
+  static const LinearGradient primaryGradient = Av.AppColors.primaryGradient;
   
-  static const LinearGradient pinkGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
-  );
+  static const LinearGradient pinkGradient = Av.AppColors.heroGradient;
   
-  static const LinearGradient orangeGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFFFA726), Color(0xFFFF7043)],
-  );
+  static const LinearGradient orangeGradient = Av.AppColors.warningGradient;
   
-  static const LinearGradient greenGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF4ECDC4), Color(0xFF44A08D)],
-  );
+  static const LinearGradient greenGradient = Av.AppColors.successGradient;
   
-  static const LinearGradient tealGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-  );
+  static const LinearGradient tealGradient = Av.AppColors.primaryGradient;
   
-  static const LinearGradient purpleGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFA8EDEA), Color(0xFFFED6E3)],
-  );
+  static const LinearGradient purpleGradient = Av.AppColors.heroGradient;
   
-  static const LinearGradient redGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFFF6B6B), Color(0xFFFFE66D)],
-  );
+  static const LinearGradient redGradient = Av.AppColors.errorGradient;
   
-  static const LinearGradient blueGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-  );
+  static const LinearGradient blueGradient = Av.AppColors.primaryGradient;
   
   // MARK: - Premium Typography (Apple-Style)
   
-  static const String fontFamily = 'SF Pro Display';
+  static const String fontFamily = Ty.AppTypography.primaryFontFamily;
   
   /// Display Styles (Extra Large)
   static const TextStyle displayLarge = TextStyle(

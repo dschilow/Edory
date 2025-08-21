@@ -42,7 +42,117 @@ class AppRouter {
   static const String help = '/help';
   static const String about = '/about';
 
-  /// Generiert die Route-Map
+  /// Router für MaterialApp.router
+  static final router = AppRouter.instance;
+
+  /// Generiert die Route-Map für MaterialApp.router
+  Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    AppUtils.debugLog('Navigating to: ${settings.name}');
+
+    switch (settings.name) {
+      case splash:
+        return MaterialPageRoute(
+          builder: (context) => const SplashScreen(),
+          settings: settings,
+        );
+      
+      case onboarding:
+        return MaterialPageRoute(
+          builder: (context) => const OnboardingScreen(),
+          settings: settings,
+        );
+      
+      case main:
+        return MaterialPageRoute(
+          builder: (context) => const MainNavigation(),
+          settings: settings,
+        );
+      
+      case home:
+        return MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+          settings: settings,
+        );
+      
+      case search:
+        return MaterialPageRoute(
+          builder: (context) => const SearchScreen(),
+          settings: settings,
+        );
+      
+      case createAvatar:
+        return MaterialPageRoute(
+          builder: (context) => const CreateAvatarScreen(),
+          settings: settings,
+        );
+      
+      case favorites:
+        return MaterialPageRoute(
+          builder: (context) => const FavoritesScreen(),
+          settings: settings,
+        );
+      
+      case profile:
+        return MaterialPageRoute(
+          builder: (context) => const ProfileScreen(),
+          settings: settings,
+        );
+      
+      case '/settings':
+        return MaterialPageRoute(
+          builder: (context) => const SettingsScreen(),
+          settings: settings,
+        );
+
+      case avatarDetail:
+        final avatarId = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (context) => AvatarDetailScreen(avatarId: avatarId),
+          settings: settings,
+        );
+
+      case categoryDetail:
+        final category = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (context) => CategoryDetailScreen(category: category ?? 'Unknown'),
+          settings: settings,
+        );
+
+      case editProfile:
+        final userId = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (context) => EditProfileScreen(userId: userId),
+          settings: settings,
+        );
+
+      case notifications:
+        return MaterialPageRoute(
+          builder: (context) => const NotificationsScreen(),
+          settings: settings,
+        );
+
+      case help:
+        return MaterialPageRoute(
+          builder: (context) => const HelpScreen(),
+          settings: settings,
+        );
+
+      case about:
+        return MaterialPageRoute(
+          builder: (context) => const AboutScreen(),
+          settings: settings,
+        );
+
+      default:
+        // Unbekannte Route
+        return MaterialPageRoute(
+          builder: (context) => const NotFoundScreen(),
+          settings: settings,
+        );
+    }
+  }
+
+  /// Generiert die Route-Map (Legacy Support)
   Map<String, WidgetBuilder> get routes => {
     splash: (context) => const SplashScreen(),
     onboarding: (context) => const OnboardingScreen(),
@@ -55,66 +165,6 @@ class AppRouter {
     settings: (context) => const SettingsScreen(),
     // Weitere Routen würden hier hinzugefügt
   };
-
-  /// Generiert Routen mit Argumenten
-  Route<dynamic>? generateRoute(RouteSettings settings) {
-    AppUtils.debugLog('Navigating to: ${settings.name}');
-
-    switch (settings.name) {
-      case avatarDetail:
-        final avatarId = settings.arguments as String?;
-        return _createRoute(
-          AvatarDetailScreen(avatarId: avatarId),
-          settings: settings,
-          transition: RouteTransition.slideFromRight,
-        );
-
-      case categoryDetail:
-        final category = settings.arguments as String?;
-        return _createRoute(
-          CategoryDetailScreen(category: category ?? 'Unknown'),
-          settings: settings,
-          transition: RouteTransition.slideFromRight,
-        );
-
-      case editProfile:
-        final userId = settings.arguments as String?;
-        return _createRoute(
-          EditProfileScreen(userId: userId),
-          settings: settings,
-          transition: RouteTransition.slideFromBottom,
-        );
-
-      case notifications:
-        return _createRoute(
-          const NotificationsScreen(),
-          settings: settings,
-          transition: RouteTransition.slideFromRight,
-        );
-
-      case help:
-        return _createRoute(
-          const HelpScreen(),
-          settings: settings,
-          transition: RouteTransition.fade,
-        );
-
-      case about:
-        return _createRoute(
-          const AboutScreen(),
-          settings: settings,
-          transition: RouteTransition.fade,
-        );
-
-      default:
-        // Unbekannte Route
-        return _createRoute(
-          const NotFoundScreen(),
-          settings: settings,
-          transition: RouteTransition.fade,
-        );
-    }
-  }
 
   /// Erstellt eine Route mit Übergängen
   PageRoute<T> _createRoute<T>(
