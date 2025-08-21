@@ -14,7 +14,7 @@ import 'package:edory_app/main.dart';
 void main() {
   testWidgets('App starts correctly', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: EdoryApp()));
+    await tester.pumpWidget(ProviderScope(child: AvatalesApp()));
 
     // Verify that the app loads
     expect(find.byType(MaterialApp), findsOneWidget);
