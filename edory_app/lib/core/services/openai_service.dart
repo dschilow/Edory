@@ -7,7 +7,7 @@ class OpenAIService {
   static const String _baseUrl = 'https://api.openai.com/v1';
   
   // WICHTIG: Ihr echter API Key hier einfügen!
-  static const String _apiKey = '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';
+  static const String _apiKey = 'no key yet';
   
   final Dio _dio;
   bool _isApiKeyValid = false;
@@ -112,7 +112,7 @@ class OpenAIService {
       final response = await _dio.post(
         '/chat/completions',  // ✅ Richtiger Endpoint
         data: {
-          'model': 'gpt-4o-mini',  // ✅ Existierendes Model
+          'model': 'gpt-5-nano',  // ✅ Existierendes Model
           'messages': [  // ✅ Korrekte Struktur
             {
               'role': 'system',
@@ -165,7 +165,7 @@ class OpenAIService {
           content: content.trim(),
           isAiGenerated: true,
           tokensUsed: tokensUsed,
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-nano',
           generatedAt: DateTime.now(),
           settings: StorySettings(
             characterName: characterName,

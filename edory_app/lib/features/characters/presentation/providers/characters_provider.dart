@@ -42,10 +42,11 @@ class CharactersNotifier extends StateNotifier<AsyncValue<List<Character>>> {
     );
   }
 
-  void addCharacter(Character character) {
+  Character addCharacter(Character character) {
     state.whenData((characters) {
       state = AsyncValue.data([...characters, character]);
     });
+    return character;
   }
 
   void updateCharacter(Character updatedCharacter) {

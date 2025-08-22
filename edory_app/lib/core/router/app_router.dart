@@ -39,7 +39,7 @@ class AppRouter {
       ),
       ShellRoute(
         builder: (context, state, child) {
-          return MainWrapper(child: child);
+          return MainWrapper(currentPath: state.uri.toString(), child: child);
         },
         routes: [
           GoRoute(
