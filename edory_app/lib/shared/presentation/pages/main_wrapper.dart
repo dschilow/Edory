@@ -1,380 +1,414 @@
 // lib/shared/presentation/pages/main_wrapper.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:math';
 import '../../../core/theme/modern_design_system.dart';
-import '../../../features/home/presentation/pages/home_page.dart';
-import '../../../features/characters/presentation/pages/characters_page.dart';
-import '../../../features/stories/presentation/pages/create_story_page.dart';
-import '../../../features/stories/presentation/pages/stories_page.dart';
-import '../../../features/community/presentation/pages/community_page.dart';
+import '../widgets/modern_bottom_navigation.dart';
 
-class MainWrapper extends ConsumerStatefulWidget {
-  final Widget child;
-  final String currentPath;
-
+/// Main Wrapper für die Avatales App
+/// Verwaltet das Bottom Navigation Layout und globale UI-Elemente
+class MainWrapper extends StatefulWidget {
   const MainWrapper({
     super.key,
     required this.child,
-    required this.currentPath,
   });
 
+  final Widget child;
+
   @override
-  ConsumerState<MainWrapper> createState() => _MainWrapperState();
+  State<MainWrapper> createState() => _MainWrapperState();
 }
 
-class _MainWrapperState extends ConsumerState<MainWrapper>
+class _MainWrapperState extends State<MainWrapper>
     with TickerProviderStateMixin {
   
-  late AnimationController _navController;
-  late AnimationController _activeController;
-  late List<AnimationController> _itemControllers;
+  late AnimationController _navigationController;
+  late AnimationController _backgroundController;
   
-  int _currentIndex = 0;
-  int _previousIndex = 0;
-
-  // Navigation Items aus JSON
-  final List<NavigationItem> _navItems = [
-    NavigationItem(
-      id: 'home',
-      icon: Icons.home_rounded,
-      label: 'Home',
-      path: '/home',
-      isPrimary: false,
-    ),
-    NavigationItem(
-      id: 'avatars',
-      icon: Icons.people_rounded,
-      label: 'Avatare',
-      path: '/characters',
-      isPrimary: false,
-    ),
-    NavigationItem(
-      id: 'generate',
-      icon: Icons.auto_awesome_rounded,
-      label: 'Generieren',
-      path: '/stories/create',
-      isPrimary: true, // Primary action
-    ),
-    NavigationItem(
-      id: 'stories',
-      icon: Icons.menu_book_rounded,
-      label: 'Stories',
-      path: '/stories',
-      isPrimary: false,
-    ),
-    NavigationItem(
-      id: 'community',
-      icon: Icons.public_rounded,
-      label: 'Community',
-      path: '/community',
-      isPrimary: false,
-    ),
-  ];
+  String _currentPath = '';
+  bool _navigationVisible = true;
 
   @override
   void initState() {
     super.initState();
     
-    _navController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _activeController = AnimationController(
-      duration: const Duration(milliseconds: 320), // spring duration
+    _navigationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     
-    // Individual controllers für jeden Tab
-    _itemControllers = List.generate(
-      _navItems.length,
-      (index) => AnimationController(
-        duration: const Duration(milliseconds: 180),
-        vsync: this,
-      ),
+    _backgroundController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
     );
     
-    _updateCurrentIndex();
-    _navController.forward();
-    _activeController.forward();
+    _navigationController.forward();
+    _backgroundController.forward();
   }
 
   @override
-  void didUpdateWidget(MainWrapper oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentPath != widget.currentPath) {
-      _updateCurrentIndex();
-    }
-  }
-
-  void _updateCurrentIndex() {
-    final newIndex = _navItems.indexWhere(
-      (item) => widget.currentPath.startsWith(item.path),
-    );
-    
-    if (newIndex != -1 && newIndex != _currentIndex) {
-      setState(() {
-        _previousIndex = _currentIndex;
-        _currentIndex = newIndex;
-      });
-      
-      // Animiere den neuen aktiven Tab
-      _activeController.reset();
-      _activeController.forward();
-      
-      // Trigger tap animation für den neuen Tab
-      _itemControllers[_currentIndex].forward().then((_) {
-        _itemControllers[_currentIndex].reverse();
-      });
-    }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateCurrentPath();
   }
 
   @override
   void dispose() {
-    _navController.dispose();
-    _activeController.dispose();
-    for (final controller in _itemControllers) {
-      controller.dispose();
-    }
+    _navigationController.dispose();
+    _backgroundController.dispose();
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-    if (index == _currentIndex) return;
+  void _updateCurrentPath() {
+    final router = GoRouter.of(context);
+    final newPath = router.routeInformationProvider.value.uri.path;
+    
+    if (newPath != _currentPath) {
+      setState(() {
+        _currentPath = newPath;
+        _navigationVisible = _shouldShowNavigation(newPath);
+      });
+      
+      if (_navigationVisible) {
+        _navigationController.forward();
+      } else {
+        _navigationController.reverse();
+      }
+    }
+  }
 
-    // Haptic feedback
-    HapticFeedback.lightImpact();
+  bool _shouldShowNavigation(String path) {
+    // Hide navigation on certain pages
+    final hiddenPaths = [
+      '/stories/',  // Story reading pages
+      '/create',    // Creation flows
+      '/onboarding',
+      '/auth',
+    ];
     
-    // Animate tap
-    _itemControllers[index].forward().then((_) {
-      _itemControllers[index].reverse();
-    });
-    
-    // Navigate
-    context.go(_navItems[index].path);
+    return !hiddenPaths.any((hiddenPath) => path.contains(hiddenPath));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.child,
       extendBody: true,
-      bottomNavigationBar: _buildBottomNavigation(),
-    );
-  }
-
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 100,
-      margin: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28), // lg radius
-        border: Border.all(
-          color: const Color(0xFF6E77FF).withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6E77FF).withOpacity(0.18), // cardGlow
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _navItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isActive = index == _currentIndex;
-              
-              return _buildNavItem(item, index, isActive);
-            }).toList(),
-          ),
-        ),
-      ),
-    ).animate(controller: _navController)
-      .fadeIn(duration: 400.ms)
-      .slideY(begin: 1, curve: Curves.easeOutCubic);
-  }
-
-  Widget _buildNavItem(NavigationItem item, int index, bool isActive) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onTabTapped(index),
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            _activeController,
-            _itemControllers[index],
-          ]),
-          builder: (context, child) {
-            // Active Tab Animations (Pop-Effekt)
-            final activeScale = isActive 
-              ? 1.0 + (_activeController.value * 0.08) // scale 1.08
-              : 1.0;
+      backgroundColor: ModernDesignSystem.textLight,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _getSystemUiOverlayStyle(),
+        child: Stack(
+          children: [
+            // Background
+            _buildBackground(),
             
-            final activeElevation = isActive 
-              ? _activeController.value * 6 // elevate 6
-              : 0.0;
+            // Main Content
+            SafeArea(
+              bottom: false, // Let navigation handle bottom safe area
+              child: widget.child,
+            ),
             
-            // Tap Animation
-            final tapScale = 1.0 - (_itemControllers[index].value * 0.1);
-            
-            // Glow Animation
-            final glowOpacity = isActive 
-              ? 0.3 + (_activeController.value * 0.2)
-              : 0.0;
-
-            return Transform.scale(
-              scale: activeScale * tapScale,
-              child: Container(
-                height: 64,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: isActive 
-                    ? const Color(0xFF6E77FF)
-                    : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    if (isActive) ...[
-                      // Raise Shadow (elevation)
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8 + activeElevation,
-                        offset: Offset(0, 2 + activeElevation / 2),
+            // Bottom Navigation
+            if (_navigationVisible)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: AnimatedBuilder(
+                  animation: _navigationController,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(
+                        0,
+                        100 * (1 - _navigationController.value),
                       ),
-                      // Glow Shadow
-                      BoxShadow(
-                        color: const Color(0xFF6E77FF).withOpacity(glowOpacity),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                      child: Opacity(
+                        opacity: _navigationController.value,
+                        child: ModernBottomNavigation(
+                          currentPath: _currentPath,
+                        ),
                       ),
-                    ],
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: EdgeInsets.all(item.isPrimary ? 8 : 6),
-                      decoration: item.isPrimary && !isActive 
-                        ? BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6E77FF), Color(0xFF4B55E6)],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF6E77FF).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          )
-                        : null,
-                      child: Icon(
-                        item.icon,
-                        size: item.isPrimary ? 28 : 24,
-                        color: _getIconColor(item, isActive),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    
-                    // Label
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 200),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isActive 
-                          ? FontWeight.bold 
-                          : FontWeight.w400,
-                        color: _getLabelColor(item, isActive),
-                      ),
-                      child: Text(
-                        item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    
-                    // Active Indicator Dot
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: isActive ? 6 : 0,
-                      height: isActive ? 6 : 0,
-                      margin: const EdgeInsets.only(top: 2),
-                      decoration: BoxDecoration(
-                        color: isActive 
-                          ? Colors.white
-                          : Colors.transparent,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-            );
-          },
+          ],
         ),
       ),
     );
   }
 
-  Color _getIconColor(NavigationItem item, bool isActive) {
-    if (isActive) {
-      return Colors.white;
-    } else if (item.isPrimary) {
-      return Colors.white; // Primary button always has white icon
-    } else {
-      return const Color(0xFF6E77FF);
+  Widget _buildBackground() {
+    return AnimatedBuilder(
+      animation: _backgroundController,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                ModernDesignSystem.textLight,
+                ModernDesignSystem.textLight.withOpacity(0.95),
+              ],
+            ),
+          ),
+          child: CustomPaint(
+            painter: _BackgroundPatternPainter(
+              animationValue: _backgroundController.value,
+            ),
+            size: Size.infinite,
+          ),
+        );
+      },
+    );
+  }
+
+  SystemUiOverlayStyle _getSystemUiOverlayStyle() {
+    // Adapt system UI based on current page
+    final isDarkPage = _currentPath.contains('/stories/') && 
+                      _currentPath.contains('/read');
+    
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDarkPage 
+          ? Brightness.light 
+          : Brightness.dark,
+      statusBarBrightness: isDarkPage 
+          ? Brightness.dark 
+          : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    );
+  }
+}
+
+/// Background Pattern Painter für subtile Textur
+class _BackgroundPatternPainter extends CustomPainter {
+  final double animationValue;
+
+  const _BackgroundPatternPainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.02 * animationValue)
+      ..style = PaintingStyle.fill;
+
+    // Create subtle dot pattern
+    const spacing = 60.0;
+    const dotSize = 1.0;
+
+    for (double x = 0; x < size.width; x += spacing) {
+      for (double y = 0; y < size.height; y += spacing) {
+        final opacity = (animationValue * 0.5) + 
+                       (0.5 * ((x + y) / (size.width + size.height)));
+        
+        canvas.drawCircle(
+          Offset(x + (spacing * 0.5), y + (spacing * 0.5)),
+          dotSize * animationValue,
+          paint..color = Colors.white.withOpacity(opacity.clamp(0.0, 0.1)),
+        );
+      }
+    }
+
+    // Add flowing geometric shapes
+    final shapePaint = Paint()
+      ..color = Colors.white.withOpacity(0.01 * animationValue)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    // Draw flowing lines
+    final path = Path();
+    for (int i = 0; i < 5; i++) {
+      final yOffset = (size.height / 6) * (i + 1);
+      path.moveTo(0, yOffset);
+      
+      for (double x = 0; x <= size.width; x += 40) {
+        final y = yOffset + 
+                  (15 * animationValue * 
+                   (i.isEven ? 1 : -1) * 
+                   sin(x / 200));
+        path.lineTo(x, y);
+      }
+    }
+    
+    canvas.drawPath(path, shapePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BackgroundPatternPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
+}
+
+/// Navigation State Provider für globale Navigation
+class NavigationState extends ChangeNotifier {
+  String _currentPath = '/home';
+  bool _navigationVisible = true;
+
+  String get currentPath => _currentPath;
+  bool get navigationVisible => _navigationVisible;
+
+  void updatePath(String path) {
+    if (_currentPath != path) {
+      _currentPath = path;
+      notifyListeners();
     }
   }
 
-  Color _getLabelColor(NavigationItem item, bool isActive) {
-    if (isActive) {
-      return Colors.white;
-    } else if (item.isPrimary) {
-      return const Color(0xFF6E77FF);
-    } else {
-      return const Color(0xFF475569);
+  void setNavigationVisible(bool visible) {
+    if (_navigationVisible != visible) {
+      _navigationVisible = visible;
+      notifyListeners();
+    }
+  }
+
+  void hideNavigation() => setNavigationVisible(false);
+  void showNavigation() => setNavigationVisible(true);
+}
+
+/// Global App State für die gesamte App
+class AppState extends ChangeNotifier {
+  bool _isOnline = true;
+  bool _isDarkMode = false;
+  String _selectedLanguage = 'de';
+
+  bool get isOnline => _isOnline;
+  bool get isDarkMode => _isDarkMode;
+  String get selectedLanguage => _selectedLanguage;
+
+  void updateConnectionStatus(bool isOnline) {
+    if (_isOnline != isOnline) {
+      _isOnline = isOnline;
+      notifyListeners();
+    }
+  }
+
+  void toggleDarkMode() {
+    _isDarkMode = !_isDarkMode;
+    notifyListeners();
+  }
+
+  void updateLanguage(String languageCode) {
+    if (_selectedLanguage != languageCode) {
+      _selectedLanguage = languageCode;
+      notifyListeners();
     }
   }
 }
 
-// Navigation Item Model
-class NavigationItem {
-  final String id;
-  final IconData icon;
-  final String label;
-  final String path;
-  final bool isPrimary;
+/// Safe Area Handler für verschiedene Bildschirmgrößen
+class SafeAreaHandler {
+  static EdgeInsets getSafeAreaPadding(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    return EdgeInsets.only(
+      top: mediaQuery.padding.top,
+      bottom: mediaQuery.padding.bottom,
+    );
+  }
 
-  NavigationItem({
-    required this.id,
-    required this.icon,
-    required this.label,
-    required this.path,
-    required this.isPrimary,
-  });
+  static double getBottomSafeArea(BuildContext context) {
+    return MediaQuery.of(context).padding.bottom;
+  }
+
+  static double getTopSafeArea(BuildContext context) {
+    return MediaQuery.of(context).padding.top;
+  }
+
+  static bool hasNotch(BuildContext context) {
+    return MediaQuery.of(context).padding.top > 24;
+  }
 }
 
-// Haptic Feedback Helper
-class HapticFeedback {
-  static void lightImpact() {
-    // Implementierung für Haptic Feedback
-    // Auf iOS: SystemSound.play(SystemSoundID.click)
-    // Auf Android: Vibration
+/// Responsive Layout Helper
+class ResponsiveLayout {
+  static bool isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600;
+  }
+
+  static bool isTablet(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width >= 600 && width < 1200;
+  }
+
+  static bool isDesktop(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 1200;
+  }
+
+  static int getGridCrossAxisCount(BuildContext context) {
+    if (isDesktop(context)) return 4;
+    if (isTablet(context)) return 3;
+    return 2;
+  }
+
+  static double getCardWidth(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (isDesktop(context)) return screenWidth / 4 - 32;
+    if (isTablet(context)) return screenWidth / 3 - 24;
+    return screenWidth / 2 - 20;
+  }
+}
+
+/// Performance Monitor für die App
+class PerformanceMonitor {
+  static void trackPageLoad(String pageName) {
+    debugPrint('📱 Page Loaded: $pageName');
+    // Hier würde normalerweise Analytics Integration stehen
+  }
+
+  static void trackUserAction(String action, {Map<String, dynamic>? parameters}) {
+    debugPrint('👆 User Action: $action ${parameters ?? ''}');
+    // Hier würde normalerweise Analytics Integration stehen
+  }
+
+  static void trackError(String error, {String? stackTrace}) {
+    debugPrint('❌ Error: $error');
+    if (stackTrace != null) {
+      debugPrint('Stack: $stackTrace');
+    }
+    // Hier würde normalerweise Crash Analytics stehen
+  }
+}
+
+/// App Lifecycle Manager
+class AppLifecycleManager extends WidgetsBindingObserver {
+  static final AppLifecycleManager _instance = AppLifecycleManager._internal();
+  factory AppLifecycleManager() => _instance;
+  AppLifecycleManager._internal();
+
+  VoidCallback? onResume;
+  VoidCallback? onPause;
+  VoidCallback? onDetach;
+
+  void initialize() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        onResume?.call();
+        break;
+      case AppLifecycleState.paused:
+        onPause?.call();
+        break;
+      case AppLifecycleState.detached:
+        onDetach?.call();
+        break;
+      case AppLifecycleState.inactive:
+        // Handle inactive state if needed
+        break;
+      case AppLifecycleState.hidden:
+        // Handle hidden state if needed
+        break;
+    }
   }
 }

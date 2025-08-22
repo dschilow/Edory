@@ -5,9 +5,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/presentation/widgets/app_scaffold.dart';
+import '../../../../shared/presentation/widgets/gradient_card.dart';
+import '../../../../shared/presentation/widgets/stats_row.dart';
 import '../../../characters/presentation/providers/characters_provider.dart';
 import '../../../characters/presentation/widgets/character_card.dart';
+import '../../../characters/presentation/widgets/hero_card.dart' as character_hero;
+import '../../../../shared/presentation/widgets/recent_stories_card.dart';
+import '../../../../shared/presentation/widgets/daily_challenge_card.dart';
+import '../../../stories/domain/entities/story.dart';
 
+/// Hauptseite der Avatales App
+/// Bietet Übersicht über Charaktere, Geschichten und tägliche Aktivitäten
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -15,733 +23,682 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> 
+class _HomePageState extends ConsumerState<HomePage>
     with TickerProviderStateMixin {
   
+  late AnimationController _animationController;
   late AnimationController _greetingController;
-  late AnimationController _cardController;
-  late AnimationController _floatingController;
-
+  late AnimationController _pulseController;
+  
+  final ScrollController _scrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
     
     _greetingController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _cardController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _floatingController = AnimationController(
-      duration: const Duration(seconds: 3),
+    
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
       vsync: this,
     );
     
+    _startAnimations();
+    _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _greetingController.dispose();
+    _pulseController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _startAnimations() {
     _greetingController.forward();
-    _cardController.forward();
-    _floatingController.repeat(reverse: true);
-    
-    // Load initial data
+    _animationController.forward();
+    _pulseController.repeat();
+  }
+
+  void _loadInitialData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(charactersProvider.notifier).loadCharacters();
     });
   }
 
   @override
-  void dispose() {
-    _greetingController.dispose();
-    _cardController.dispose();
-    _floatingController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      title: _getGreeting(),
+      subtitle: 'Wollen wir weiterträumen?',
+      showBackButton: false,
+      actions: [
+        _buildNotificationButton(),
+        _buildProfileButton(),
+      ],
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Greeting and Hero Section
+            SliverToBoxAdapter(
+              child: _buildHeroSection()
+                  .animate(controller: _greetingController)
+                  .slideY(begin: -0.3, duration: 600.ms)
+                  .fadeIn(),
+            ),
+            
+            // Stats Overview
+            SliverToBoxAdapter(
+              child: _buildStatsSection()
+                  .animate(controller: _animationController)
+                  .slideY(begin: 0.3, duration: 600.ms, delay: 200.ms)
+                  .fadeIn(),
+            ),
+            
+            // Characters Preview
+            SliverToBoxAdapter(
+              child: _buildCharactersSection()
+                  .animate(controller: _animationController)
+                  .slideX(begin: -0.3, duration: 600.ms, delay: 400.ms)
+                  .fadeIn(),
+            ),
+            
+            // Recent Stories
+            SliverToBoxAdapter(
+              child: _buildRecentStoriesSection()
+                  .animate(controller: _animationController)
+                  .slideX(begin: 0.3, duration: 600.ms, delay: 600.ms)
+                  .fadeIn(),
+            ),
+            
+            // Daily Challenge
+            SliverToBoxAdapter(
+              child: _buildDailyChallengeSection()
+                  .animate(controller: _animationController)
+                  .slideY(begin: 0.3, duration: 600.ms, delay: 800.ms)
+                  .fadeIn(),
+            ),
+            
+            // Bottom spacing
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 100),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: _buildQuickActionFAB(),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final charactersState = ref.watch(charactersProvider);
-    final timeOfDay = _getTimeOfDay();
-
-    return AppScaffold(
-      title: timeOfDay.greeting,
-      subtitle: 'Wollen wir weiterträumen?',
-      actions: [
+  Widget _buildNotificationButton() {
+    return Stack(
+      children: [
         Container(
-          width: 60,
-          height: 60,
-          margin: const EdgeInsets.only(right: 20),
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6E77FF), Color(0xFF8EE2D2)],
-            ),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.8),
-              width: 3,
-            ),
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.black.withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6E77FF).withOpacity(0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: const Center(
-            child: Text('👦', style: TextStyle(fontSize: 24)),
-          ),
-        ).animate(controller: _floatingController)
-          .moveY(begin: -2, end: 2, curve: Curves.easeInOut),
-      ],
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF6F8FF), // bg from JSON
-              Color(0xFFFFFFFF),
-            ],
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                // TODO: Show notifications
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Benachrichtigungen werden implementiert...'),
+                  ),
+                );
+              },
+              child: Icon(
+                Icons.notifications_outlined,
+                size: 20,
+                color: ModernDesignSystem.primaryTextColor,
+              ),
+            ),
           ),
         ),
-        child: RefreshIndicator(
-          onRefresh: () => ref.read(charactersProvider.notifier).loadCharacters(),
-          child: CustomScrollView(
-            slivers: [
-              // Hero Section mit Greeting
-              SliverToBoxAdapter(
-                child: _buildHeroSection(timeOfDay)
-                  .animate(controller: _greetingController)
-                  .fadeIn(duration: 600.ms)
-                  .slideY(begin: 0.3, curve: Curves.easeOutBack),
-              ),
-              
-              // Recent Stories Section
-              SliverToBoxAdapter(
-                child: _buildRecentStoriesSection()
-                  .animate(controller: _cardController)
-                  .fadeIn(delay: 200.ms, duration: 500.ms)
-                  .slideX(begin: -0.2, curve: Curves.easeOutCubic),
-              ),
-              
-              // My Avatars Section
-              SliverToBoxAdapter(
-                child: _buildAvatarsSection(charactersState)
-                  .animate(controller: _cardController)
-                  .fadeIn(delay: 400.ms, duration: 500.ms)
-                  .slideX(begin: 0.2, curve: Curves.easeOutCubic),
-              ),
-              
-              // Quick Start Section
-              SliverToBoxAdapter(
-                child: _buildQuickStartSection()
-                  .animate(controller: _cardController)
-                  .fadeIn(delay: 600.ms, duration: 500.ms)
-                  .slideY(begin: 0.2, curve: Curves.easeOutBack),
-              ),
-              
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
+        
+        // Notification badge
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: ModernDesignSystem.pastelRed,
+              shape: BoxShape.circle,
+            ),
+          )
+              .animate(controller: _pulseController)
+              .scale(begin: Offset(0.8, 0.8), end: Offset(1.2, 1.2), duration: 1000.ms)
+              .then()
+              .scale(begin: Offset(1.2, 1.2), end: Offset(0.8, 0.8), duration: 1000.ms),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileButton() {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: ModernDesignSystem.primaryGradient,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: ModernDesignSystem.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => context.go('/profile'),
+          child: const Icon(
+            Icons.person_outline,
+            size: 20,
+            color: Colors.white,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeroSection(TimeOfDay timeOfDay) {
+  Widget _buildHeroSection() {
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF6E77FF).withOpacity(0.1),
-            const Color(0xFF8EE2D2).withOpacity(0.1),
-            const Color(0xFFFF89B3).withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28), // radius.lg
-        border: Border.all(
-          color: const Color(0xFF6E77FF).withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6E77FF).withOpacity(0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Column(
+        children: [
+          // Main CTA Card
+          character_hero.HeroCard(
+            title: 'Hallo, Mila!',
+            subtitle: 'Bereit für ein neues Abenteuer?',
+            buttonText: 'Neue Geschichte erstellen',
+            onPressed: () => context.go('/stories/create'),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeroIllustration() {
+    return Stack(
+      children: [
+        // Background shapes
+        Positioned(
+          top: 20,
+          right: 20,
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+          )
+              .animate(controller: _pulseController)
+              .scale(begin: Offset(0.8, 0.8), end: Offset(1.2, 1.2), duration: 2000.ms)
+              .then()
+              .scale(begin: Offset(1.2, 1.2), end: Offset(0.8, 0.8), duration: 2000.ms),
+        ),
+        
+        Positioned(
+          bottom: 30,
+          left: 30,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          )
+              .animate(controller: _pulseController)
+              .scale(begin: Offset(1.0, 1.0), end: Offset(1.3, 1.3), duration: 2000.ms, delay: 500.ms)
+              .then()
+              .scale(begin: Offset(1.3, 1.3), end: Offset(1.0, 1.0), duration: 2000.ms),
+        ),
+        
+        // Main illustration
+        Center(
+          child: Icon(
+            Icons.auto_stories,
+            size: 80,
+            color: Colors.white.withOpacity(0.9),
+          )
+              .animate(controller: _animationController)
+              .scale(duration: 800.ms, curve: Curves.elasticOut),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsSection() {
+    final charactersState = ref.watch(charactersProvider);
+    
+    return Container(
+      margin: const EdgeInsets.all(20),
+      child: charactersState.when(
+        data: (characters) => StatsRow(
+          stats: [
+            StatData(
+              icon: '📚',
+              value: _getStoriesCount().toString(),
+              label: 'Geschichten',
+              gradient: ModernDesignSystem.redGradient,
+            ),
+            StatData(
+              icon: '👥',
+              value: characters.length.toString(),
+              label: 'Avatare',
+              gradient: ModernDesignSystem.primaryGradient,
+            ),
+            StatData(
+              icon: '🏆',
+              value: _getTotalLevel(characters).toString(),
+              label: 'Level',
+              gradient: ModernDesignSystem.greenGradient,
+            ),
+          ],
+        ),
+        loading: () => _buildStatsLoading(),
+        error: (_, __) => _buildStatsLoading(),
+      ),
+    );
+  }
+
+  Widget _buildStatsLoading() {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildCharactersSection() {
+    final charactersState = ref.watch(charactersProvider);
+    
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 0, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                timeOfDay.emoji,
-                style: const TextStyle(fontSize: 32),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hallo, Mila', // aus sampleData
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                    Text(
-                      timeOfDay.subtitle,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: const Color(0xFF475569),
-                      ),
-                    ),
-                  ],
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Meine Avatare',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => context.go('/characters'),
+                  child: Text(
+                    'Alle ansehen',
+                    style: TextStyle(
+                      color: ModernDesignSystem.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
-          // Stats Overview
-          Row(
-            children: [
-              _buildStatCard('📚', '3', 'Geschichten'),
-              const SizedBox(width: 12),
-              _buildStatCard('👥', '2', 'Avatare'),
-              const SizedBox(width: 12),
-              _buildStatCard('🏆', '5', 'Level'),
-            ],
+          SizedBox(
+            height: 200,
+            child: charactersState.when(
+              data: (characters) => _buildCharactersList(characters),
+              loading: () => _buildCharactersLoading(),
+              error: (_, __) => _buildCharactersError(),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String emoji, String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
+  Widget _buildCharactersList(List characters) {
+    if (characters.isEmpty) {
+      return _buildCreateFirstCharacter();
+    }
+    
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: characters.length + 1,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemBuilder: (context, index) {
+        if (index == characters.length) {
+          return _buildAddCharacterCard();
+        }
+        
+        final character = characters[index];
+        return Container(
+          width: 160,
+          margin: const EdgeInsets.only(right: 16),
+          child: CharacterCard(
+            character: character,
+            onTap: () => context.go('/characters/${character.id}'),
+            isSelectable: false,
+          )
+              .animate(delay: (index * 100).ms)
+              .slideX(begin: 0.3, duration: 600.ms)
+              .fadeIn(),
+        );
+      },
+    );
+  }
+
+  Widget _buildCharactersLoading() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: 3,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemBuilder: (context, index) => Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF6E77FF).withOpacity(0.1),
-          ),
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
         ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharactersError() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
-              ),
+            Icon(
+              Icons.error_outline,
+              color: Colors.red.shade400,
+              size: 32,
             ),
+            const SizedBox(height: 8),
             Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF475569),
+              'Fehler beim Laden',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateFirstCharacter() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: GradientCard(
+        gradient: LinearGradient(
+          colors: [
+            ModernDesignSystem.primaryColor.withOpacity(0.1),
+            ModernDesignSystem.primaryColor.withOpacity(0.05),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_add_rounded,
+              size: 48,
+              color: ModernDesignSystem.primaryColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Erstelle deinen ersten Avatar',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: ModernDesignSystem.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Beginne dein Abenteuer mit einem digitalen Helden',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: ModernDesignSystem.secondaryTextColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.go('/characters/create'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ModernDesignSystem.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Avatar erstellen'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddCharacterCard() {
+    return Container(
+      width: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: ModernDesignSystem.primaryColor.withOpacity(0.3),
+          width: 2,
+          style: BorderStyle.solid,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => context.go('/characters/create'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: ModernDesignSystem.primaryGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Neuer\nAvatar',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: ModernDesignSystem.primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildRecentStoriesSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Letzte Geschichten',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               TextButton(
                 onPressed: () => context.go('/stories'),
-                child: const Text(
-                  'Alle ansehen',
-                  style: TextStyle(
-                    color: Color(0xFF6E77FF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Story Cards (horizontal scroll)
-          SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 3, // Mock data
-              itemBuilder: (context, index) => _buildStoryCard(index),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoryCard(int index) {
-    final stories = [
-      {
-        'title': 'Die Wolkenbahn',
-        'avatar': 'Luna',
-        'progress': 0.6,
-        'cover': '🌙',
-      },
-      {
-        'title': 'Der magische Wald',
-        'avatar': 'Kiko', 
-        'progress': 0.3,
-        'cover': '🌲',
-      },
-      {
-        'title': 'Unterwasser-Abenteuer',
-        'avatar': 'Luna',
-        'progress': 1.0,
-        'cover': '🐠',
-      },
-    ];
-    
-    final story = stories[index];
-    
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Cover Image
-          Container(
-            height: 90,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF6E77FF).withOpacity(0.2),
-                  const Color(0xFF8EE2D2).withOpacity(0.2),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                story['cover'] as String,
-                style: const TextStyle(fontSize: 40),
-              ),
-            ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  story['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'mit ${story['avatar']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                
-                // Progress Bar
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinearProgressIndicator(
-                      value: story['progress'] as double,
-                      backgroundColor: const Color(0xFF6E77FF).withOpacity(0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6E77FF)),
-                      minHeight: 4,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${((story['progress'] as double) * 100).toInt()}%',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF475569),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarsSection(AsyncValue<List<dynamic>> charactersState) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Meine Avatare',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go('/characters'),
-                child: const Text(
-                  'Alle ansehen',
-                  style: TextStyle(
-                    color: Color(0xFF6E77FF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          charactersState.when(
-            data: (characters) => SizedBox(
-              height: 100,
-              child: Row(
-                children: [
-                  // Existing Characters
-                  ...characters.take(3).map((character) => 
-                    _buildAvatarTile(character)
-                  ),
-                  
-                  // Add New Avatar Button
-                  _buildAddAvatarButton(),
-                ],
-              ),
-            ),
-            loading: () => const SizedBox(
-              height: 120,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => _buildEmptyAvatarsState(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarTile(dynamic character) {
-    return Container(
-      width: 88, // AvatarTile size from JSON
-      margin: const EdgeInsets.only(right: 16),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () => context.go('/characters/${character.id}'),
-            child: Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(44),
-                border: Border.all(
-                  color: const Color(0xFF6E77FF).withOpacity(0.2),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6E77FF).withOpacity(0.18),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
                 child: Text(
-                  character.displayName?.substring(0, 1).toUpperCase() ?? '?',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6E77FF),
+                  'Alle ansehen',
+                  style: TextStyle(
+                    color: ModernDesignSystem.primaryColor,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            character.displayName ?? 'Unbekannt',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF0F172A),
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            'Level ${character.traits?.courage ?? 1}',
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF475569),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddAvatarButton() {
-    return GestureDetector(
-      onTap: () => context.go('/characters/create'),
-      child: Container(
-        width: 88,
-        height: 88,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF6E77FF).withOpacity(0.1),
-              const Color(0xFF8EE2D2).withOpacity(0.1),
             ],
           ),
-          borderRadius: BorderRadius.circular(44),
-          border: Border.all(
-            color: const Color(0xFF6E77FF).withOpacity(0.3),
-            width: 2,
-            strokeAlign: BorderSide.strokeAlignInside,
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.add_rounded,
-            size: 32,
-            color: Color(0xFF6E77FF),
-          ),
-        ),
+          const SizedBox(height: 16),
+          
+  RecentStoriesCard(
+    stories: _getRecentStories(),
+    onStoryTap: (story) => context.go('/stories/${story.id}/read'),
+    onCreateStoryTap: () => context.go('/stories/create'),
+  ),
+],
       ),
     );
   }
 
-  Widget _buildEmptyAvatarsState() {
+  Widget _buildDailyChallengeSection() {
     return Container(
-      height: 120,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF6E77FF).withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('☁️', style: TextStyle(fontSize: 32)),
-          const SizedBox(height: 8),
-          const Text(
-            'Noch keine Avatare',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          TextButton(
-            onPressed: () => context.go('/characters/create'),
-            child: const Text(
-              'Ersten Avatar erstellen',
-              style: TextStyle(
-                color: Color(0xFF6E77FF),
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStartSection() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Schnellstart',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+          Text(
+            'Tägliche Herausforderung',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 16),
           
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionButton(
-                  icon: '✨',
-                  label: 'Neue Geschichte',
-                  color: const Color(0xFF6E77FF),
-                  onTap: () => context.go('/stories/create'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildQuickActionButton(
-                  icon: '🎓',
-                  label: 'Lernmodus',
-                  color: const Color(0xFF8EE2D2),
-                  onTap: () => context.go('/learning'),
-                ),
-              ),
-            ],
+          DailyChallengeCard(
+            title: 'Kreative Geschichtsidee',
+            description: 'Erstelle eine Geschichte über Freundschaft zwischen zwei ungewöhnlichen Charakteren.',
+            progress: 0.3,
+            reward: '50 XP + Spezial-Avatar',
+            onStartTap: () => context.go('/stories/create'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionButton({
-    required String icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
+  Widget _buildQuickActionFAB() {
+    return FloatingActionButton.extended(
+      onPressed: () => context.go('/stories/create'),
+      backgroundColor: ModernDesignSystem.primaryColor,
+      icon: const Icon(Icons.auto_awesome, color: Colors.white),
+      label: const Text(
+        'Geschichte erstellen',
+        style: TextStyle(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Center(
-                child: Text(
-                  icon,
-                  style: const TextStyle(fontSize: 24),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  TimeOfDay _getTimeOfDay() {
+  // Helper Methods
+  String _getGreeting() {
     final hour = DateTime.now().hour;
-    
-    if (hour < 12) {
-      return TimeOfDay(
-        greeting: 'Guten Morgen',
-        subtitle: 'Bereit für ein neues Abenteuer?',
-        emoji: '🌅',
-      );
-    } else if (hour < 18) {
-      return TimeOfDay(
-        greeting: 'Guten Tag', 
-        subtitle: 'Lass uns weiterträumen!',
-        emoji: '☀️',
-      );
-    } else {
-      return TimeOfDay(
-        greeting: 'Guten Abend',
-        subtitle: 'Zeit für eine Gute-Nacht-Geschichte?',
-        emoji: '🌙',
-      );
-    }
+    if (hour < 12) return 'Guten Morgen';
+    if (hour < 17) return 'Guten Tag';
+    if (hour < 22) return 'Guten Abend';
+    return 'Gute Nacht';
   }
-}
 
-class TimeOfDay {
-  final String greeting;
-  final String subtitle;
-  final String emoji;
+  int _getStoriesCount() {
+    // TODO: Get from stories provider
+    return 3;
+  }
 
-  TimeOfDay({
-    required this.greeting,
-    required this.subtitle,
-    required this.emoji,
-  });
+  int _getTotalLevel(List characters) {
+    if (characters.isEmpty) return 0;
+    return characters.fold<int>(0, (sum, character) => sum + (character.level as int));
+  }
+
+  List<Story> _getRecentStories() {
+    // TODO: Get from stories provider
+    return [
+      Story.mock(
+        id: '1',
+        title: 'Die Wolkenbahn',
+        characterName: 'Luna',
+      ),
+      Story.mock(
+        id: '2',
+        title: 'Der magische Wald',
+        characterName: 'Kiko',
+      ),
+    ];
+  }
+
+  Future<void> _onRefresh() async {
+    await ref.read(charactersProvider.notifier).loadCharacters();
+    // TODO: Refresh other data
+  }
 }

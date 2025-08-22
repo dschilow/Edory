@@ -11,7 +11,7 @@ class CharactersMockDataSource {
         description: 'Eine mutige Abenteurerin, die neue Welten erkundet',
         appearance: 'Lange braune Haare, grüne Augen, Entdeckerausrüstung',
         personality: 'Neugierig, mutig und hilfsbereit',
-        traits: const CharacterTraitsModel(
+        traits: CharacterTraitsModel(
           courage: 85,
           creativity: 70,
           helpfulness: 80,
@@ -20,6 +20,8 @@ class CharactersMockDataSource {
           curiosity: 95,
           empathy: 75,
           persistence: 80,
+          intelligence: 70,
+          kindness: 80,
         ),
         isPublic: true,
         createdAt: DateTime.now().subtract(const Duration(days: 30)),
@@ -35,7 +37,7 @@ class CharactersMockDataSource {
         description: 'Ein kreativer Tüftler mit unendlicher Fantasie',
         appearance: 'Kurze blonde Haare, blaue Augen, immer mit Werkzeug',
         personality: 'Kreativ, geduldig und einfallsreich',
-        traits: const CharacterTraitsModel(
+        traits: CharacterTraitsModel(
           courage: 65,
           creativity: 95,
           helpfulness: 85,
@@ -44,6 +46,8 @@ class CharactersMockDataSource {
           curiosity: 80,
           empathy: 70,
           persistence: 90,
+          intelligence: 85,
+          kindness: 75,
         ),
         isPublic: true,
         createdAt: DateTime.now().subtract(const Duration(days: 45)),
@@ -59,7 +63,7 @@ class CharactersMockDataSource {
         description: 'Eine weise Zauberin mit magischen Kräften',
         appearance: 'Violette Haare, goldene Augen, Zauberumhang',
         personality: 'Weise, empathisch und geheimnisvoll',
-        traits: const CharacterTraitsModel(
+        traits: CharacterTraitsModel(
           courage: 75,
           creativity: 85,
           helpfulness: 90,
@@ -68,6 +72,8 @@ class CharactersMockDataSource {
           curiosity: 75,
           empathy: 95,
           persistence: 85,
+          intelligence: 90,
+          kindness: 85,
         ),
         isPublic: false,
         createdAt: DateTime.now().subtract(const Duration(days: 60)),
